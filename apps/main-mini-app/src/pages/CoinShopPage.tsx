@@ -1,6 +1,6 @@
 import React from 'react';
 import { useShop, useGamificationStats } from '../hooks/useGamification';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 import { ShoppingCart, Coins, AlertCircle, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

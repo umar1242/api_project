@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSchedule } from '../hooks/useSchedule';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 import {
   BarChart2,
   CheckCircle,

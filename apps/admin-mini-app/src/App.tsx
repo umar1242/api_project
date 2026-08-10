@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
-import { Loader } from './components/Loader';
+import { Loader } from '@shared-ui/core';
 import { useTelegramUser } from './hooks/useTelegramUser';
 import { Home, Book, Users, Layout, Settings } from 'lucide-react';
 
@@ -17,7 +17,7 @@ function BottomNav() {
   ];
 
   return (
-    <nav className="bottom-nav pb-safe">
+    <nav className="bottom-nav" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {navItems.map((item) => {
         const isActive = location.pathname.startsWith(item.path);
         return (
@@ -46,12 +46,12 @@ import { GroupsPage } from './pages/GroupsPage';
 // Temporary placeholders for pages
 const DashboardPage = () => (
   <div className="page">
-    <div className="page-header mb-4">
+    <div className="page-header" style={{ marginBottom: 'var(--space-4)' }}>
       <h1 className="page-header__title gradient-text">Admin Dashboard</h1>
     </div>
     <div className="card glass-form">
-      <h2 className="text-lg font-bold text-gray-900 mb-2">Welcome!</h2>
-      <p className="text-sm text-gray-600">Select an option from the bottom menu to manage your platform.</p>
+      <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--tg-text)', marginBottom: 'var(--space-2)' }}>Welcome!</h2>
+      <p style={{ fontSize: '14px', color: 'var(--tg-hint)' }}>Select an option from the bottom menu to manage your platform.</p>
     </div>
   </div>
 );

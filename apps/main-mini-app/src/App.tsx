@@ -9,7 +9,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { AssignmentsPage } from './pages/AssignmentsPage';
 import { AssignmentDetailsPage } from './pages/AssignmentDetailsPage';
 import { CoinShopPage } from './pages/CoinShopPage';
-import { Loader } from './components/Loader';
+import { Loader } from '@shared-ui/core';
 import { useTelegramUser } from './hooks/useTelegramUser';
 import { getUserEnrollments } from './api';
 import type { Enrollment } from './types';

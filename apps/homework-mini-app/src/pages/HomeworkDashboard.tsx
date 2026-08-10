@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Clock, ChevronRight } from 'lucide-react';
 import { apiClient } from '../api/client';
-import WebAppModule from "@twa-dev/sdk";
-const WebApp = (WebAppModule as any).default || WebAppModule;
 
 export default function HomeworkDashboard() {
   const [homeworks, setHomeworks] = useState<any[]>([]);

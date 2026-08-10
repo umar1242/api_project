@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 import { AlertCircle, User, Phone, Shield, Activity, BookOpen } from 'lucide-react';
 import type { UserProfile, Enrollment } from '../types';
 

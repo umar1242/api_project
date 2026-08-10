@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSchedule } from '../hooks/useSchedule';
 import { LessonCard } from '../components/LessonCard';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 import { RefreshCw, AlertCircle, CalendarDays, Filter } from 'lucide-react';
 
 interface SchedulePageProps {

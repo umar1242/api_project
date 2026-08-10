@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssignments } from '../hooks/useAssignments';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 import { FileText, AlertCircle, RefreshCw, ChevronRight } from 'lucide-react';
 
 

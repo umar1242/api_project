@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAssignmentDetails } from '../hooks/useAssignmentDetails';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 import { ChevronLeft, AlertCircle, RefreshCw, Send, CheckCircle } from 'lucide-react';
 
 interface AssignmentDetailsPageProps {

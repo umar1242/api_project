@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import { apiClient } from '../api/client';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 import { Timer } from '../components/Timer';
 import { MathKeyboard } from '../components/MathKeyboard';
 import WebAppModule from "@twa-dev/sdk";
@@ -14,7 +14,7 @@ export const TestTakingPage: React.FC = () => {
   const [test, setTest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [timeLeft, setTimeLeft] = useState(3600); // 1 hour demo timer
+  const [timeLeft] = useState(3600); // 1 hour demo timer
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -46,7 +46,7 @@ export const TestTakingPage: React.FC = () => {
 
   const handleSubmit = async () => {
     WebApp.HapticFeedback.notificationOccurred('success');
-    WebApp.showConfirm('Are you sure you want to finish the test?', async (confirm) => {
+    WebApp.showConfirm('Are you sure you want to finish the test?', async (confirm: boolean) => {
       if(confirm) {
         try {
           const userId = WebApp.initDataUnsafe?.user?.id?.toString() || '12345'; // mock user for demo

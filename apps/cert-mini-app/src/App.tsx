@@ -1,39 +1,19 @@
+import { BottomNav as SharedBottomNav } from '@shared-ui/core';
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
-import { Loader } from './components/Loader';
+import { Loader } from '@shared-ui/core';
 import { useTelegramUser } from './hooks/useTelegramUser';
-import { Layout } from 'lucide-react';
+
+const NAV_ITEMS = [
+  { to: '/tests', label: 'Tests', icon: '📝' },
+  { to: '/leaderboard', label: 'Rating', icon: '🏆' },
+  { to: '/profile', label: 'Profile', icon: '👤' },
+];
 
 function BottomNav() {
-  const location = useLocation();
-  const navItems = [
-    { path: '/tests', label: 'Tests', icon: '📝' },
-    { path: '/leaderboard', label: 'Rating', icon: '🏆' },
-    { path: '/profile', label: 'Profile', icon: '👤' },
-  ];
-
-  return (
-    <nav className="bottom-nav">
-      {navItems.map((item) => (
-        <Link
-          key={item.path}
-          to={item.path}
-          className={`bottom-nav__item ${
-            location.pathname.startsWith(item.path)
-              ? 'bottom-nav__item--active'
-              : ''
-          }`}
-        >
-          <div className="bottom-nav__icon">
-            <span style={{ fontSize: '20px' }}>{item.icon}</span>
-          </div>
-          <span className="bottom-nav__label">{item.label}</span>
-        </Link>
-      ))}
-    </nav>
-  );
+  return <SharedBottomNav items={NAV_ITEMS as any} />;
 }
 
 import { TestsPage } from './pages/TestsPage';
@@ -44,7 +24,7 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 const ProfilePage = () => <div className="page"><div className="card glass-form"><h1>Profile</h1></div></div>;
 
 function App() {
-  const { user, isLoading } = useTelegramUser();
+  const { isLoading } = useTelegramUser();
 
   useEffect(() => {
     WebApp.ready();

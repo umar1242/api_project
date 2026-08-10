@@ -5,15 +5,30 @@ import { apiClient } from './api/api.client';
 const bot = new Bot(config.telegramToken);
 
 bot.command('start', async (ctx) => {
+  const firstName = ctx.from?.first_name ?? 'Student';
+  const lastName = ctx.from?.last_name ?? '';
+  const telegramId = ctx.from?.id;
+
+  if (telegramId) {
+    try {
+      await apiClient.post('/users/upsert', {
+        telegramId,
+        fullName: `${firstName} ${lastName}`.trim(),
+      });
+    } catch (err) {
+      console.error(`[Material Bot] Failed to upsert user ${telegramId}:`, err);
+    }
+  }
+
   await ctx.reply(
-    `Welcome! Click the button below to view course materials.`,
+    `Welcome, <b>${firstName}</b>! Click the button below to view course materials.`,
     {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: 'Open Materials',
+              text: '📚 Open Materials',
               web_app: { url: config.miniAppUrl },
             },
           ],

@@ -9,7 +9,7 @@ interface MathKeyboardProps {
 }
 
 export const MathKeyboard: React.FC<MathKeyboardProps> = ({ onLatexChange, initialLatex = '' }) => {
-  const [latex, setLatex] = useState(initialLatex);
+  const [, setLatex] = useState(initialLatex);
   const mathRef = useRef<HTMLDivElement>(null);
   const keyboardMemoryRef = useRef(new mke.KeyboardMemory());
   
@@ -54,13 +54,13 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = ({ onLatexChange, initi
         mke.deleteLeft(keyboardMemoryRef.current);
         break;
       case 'fraction':
-        mke.insert(keyboardMemoryRef.current, new mke.Fraction());
+        mke.insertWithEncapsulateCurrent(keyboardMemoryRef.current, new mke.DescendingBranchingNode('\\frac{', '}{', '}'));
         break;
       case 'power':
-        mke.insert(keyboardMemoryRef.current, new mke.Power());
+        mke.insertWithEncapsulateCurrent(keyboardMemoryRef.current, new mke.AscendingBranchingNode('', '^{', '}'));
         break;
       case 'sqrt':
-        mke.insert(keyboardMemoryRef.current, new mke.SquareRoot());
+        mke.insertWithEncapsulateCurrent(keyboardMemoryRef.current, new mke.StandardBranchingNode('\\sqrt{', '}'));
         break;
       default:
         // Basic numbers and operators

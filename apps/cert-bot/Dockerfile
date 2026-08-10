@@ -4,6 +4,7 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 COPY package.json ./
 RUN npm install --prefer-offline
+RUN mkdir -p /app/packages/shared-ui/node_modules
 
 # Stage: development
 FROM node:22-alpine AS dev

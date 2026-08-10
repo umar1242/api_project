@@ -6,6 +6,14 @@
     <meta name="description" content="Student Dashboard — view your schedule, progress, and profile" />
     <title>Student Dashboard</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+      window.addEventListener('error', function(e) {
+        document.body.innerHTML += '<div style="color:red; padding: 20px; font-size: 14px; position: fixed; top: 0; left: 0; z-index: 9999; background: white;">' + e.message + ' ' + e.filename + ':' + e.lineno + '</div>';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        document.body.innerHTML += '<div style="color:red; padding: 20px; font-size: 14px; position: fixed; top: 0; left: 0; z-index: 9999; background: white;">Promise Rejection: ' + e.reason + '</div>';
+      });
+    </script>
   </head>
   <body>
     <div id="root">

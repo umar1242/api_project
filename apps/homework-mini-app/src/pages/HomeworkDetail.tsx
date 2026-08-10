@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import { apiClient } from '../api/client';
@@ -37,10 +37,14 @@ export default function HomeworkDetail() {
 
   const handleSubmit = async () => {
     WebApp.HapticFeedback.notificationOccurred('success');
-    WebApp.showConfirm('Are you sure you want to finish the homework?', async (confirm) => {
+    WebApp.showConfirm('Are you sure you want to finish the homework?', async (confirm: boolean) => {
       if(confirm) {
         try {
-          const userId = WebApp.initDataUnsafe?.user?.id?.toString() || '12345';
+          const userId = WebApp.initDataUnsafe?.user?.id?.toString();
+          if (!userId) {
+            WebApp.showAlert('Unable to get Telegram user ID. Please open the app from Telegram.');
+            return;
+          }
           await apiClient.post(`/variants/${id}/submissions`, {
             userId,
             answers,

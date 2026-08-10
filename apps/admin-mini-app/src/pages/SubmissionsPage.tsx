@@ -39,14 +39,14 @@ export const SubmissionsPage: React.FC = () => {
           <p className="empty-state__desc text-center text-sm text-gray-500">No pending submissions to grade.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="section">
           {submissions.map(sub => (
             <div key={sub.id} className="card glass-form interactive-card" onClick={() => navigate(`/submissions/${sub.id}`)}>
-              <div className="flex justify-between items-start mb-2">
+              <div className="progress-section__header">
                 <h3 className="font-bold text-lg">{sub.variant.title}</h3>
                 <span className="badge badge--red">Action Needed</span>
               </div>
-              <p className="text-sm text-gray-600 mb-4">
+              <p style={{ fontSize: "14px", color: "var(--tg-hint)", marginBottom: "var(--space-4)" }}>
                 Student: <span className="font-semibold">{sub.user.fullName}</span>
               </p>
               

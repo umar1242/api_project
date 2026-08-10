@@ -96,18 +96,18 @@ export const VariantsPage: React.FC = () => {
 
   if (step === 4) {
     return (
-      <div className="page pb-40">
+      <div className="page">
         <div className="empty-state glass-form mt-10">
           <CheckCircle size={64} className="text-green-500 mb-4" />
-          <h2 className="empty-state__title text-2xl font-bold mb-2">Variant Created!</h2>
-          <p className="text-center text-gray-600 mb-6">Your variant is ready. Share this link with students.</p>
-          <div className="bg-gray-100 p-3 rounded-xl mb-6 break-all text-sm font-mono text-gray-800 border border-gray-200 w-full text-center">
+          <h2 className="empty-state__title">Variant Created!</h2>
+          <p className="empty-state__desc">Your variant is ready. Share this link with students.</p>
+          <div style={{ background: "var(--tg-secondary)", padding: "var(--space-3)", borderRadius: "var(--radius-lg)", wordBreak: "break-all", fontFamily: "monospace", border: "1px solid var(--tg-hint)", textAlign: "center", marginBottom: "var(--space-6)" }}>
             {shareLink}
           </div>
-          <button className="btn btn--primary btn--full glass-btn shadow-lg shadow-blue-500/30" onClick={handleShare}>
+          <button className="btn btn--primary btn--full glass-btn" onClick={handleShare}>
             Share via Telegram
           </button>
-          <button className="btn btn--full bg-gray-200 text-gray-800 mt-3" onClick={() => { setStep(1); setTitle(''); setTasks([]); setType1Count(0); setType2Count(0); setType3Count(0); }}>
+          <button className="btn btn--secondary btn--full" onClick={() => { setStep(1); setTitle(''); setTasks([]); setType1Count(0); setType2Count(0); setType3Count(0); }}>
             Create Another
           </button>
         </div>
@@ -117,7 +117,7 @@ export const VariantsPage: React.FC = () => {
 
   if (step === 3) {
     return (
-      <div className="page pb-40">
+      <div className="page">
         <div className="page-header mb-4">
           <h1 className="page-header__title gradient-text">Check Data</h1>
           <FileText className="text-blue-500" />
@@ -127,8 +127,8 @@ export const VariantsPage: React.FC = () => {
           <p className="text-sm text-gray-600 mb-2">Starts: {new Date(startsAt).toLocaleString()}</p>
           <p className="text-sm text-gray-600 mb-2">Deadline: {new Date(deadline).toLocaleString()}</p>
           <div className="mt-4 border-t border-gray-200 pt-3 flex gap-4">
-             <div className="flex flex-col"><span className="text-xs text-gray-500">Tasks</span><span className="font-bold">{tasks.length}</span></div>
-             <div className="flex flex-col"><span className="text-xs text-gray-500">Auto-graded</span><span className="font-bold">{tasks.filter(t => !t.requiresAdmin).length}</span></div>
+             <div className="flex flex-col"><span className="info-row__label">Tasks</span><span className="font-bold">{tasks.length}</span></div>
+             <div className="flex flex-col"><span className="info-row__label">Auto-graded</span><span className="font-bold">{tasks.filter(t => !t.requiresAdmin).length}</span></div>
           </div>
         </div>
         <button className="btn btn--primary btn--full glass-btn shadow-lg shadow-green-500/30 dynamic-glow" onClick={handleSubmit}>
@@ -144,7 +144,7 @@ export const VariantsPage: React.FC = () => {
 
   if (step === 2) {
     return (
-      <div className="page pb-40">
+      <div className="page">
         <div className="page-header mb-4">
           <h1 className="page-header__title gradient-text">Enter Answers</h1>
         </div>
@@ -161,7 +161,7 @@ export const VariantsPage: React.FC = () => {
               
               <div className="task-card__body">
                 {task.type === 'MULTIPLE_CHOICE' && (
-                  <div className="mb-4">
+                  <div style={{ marginBottom: "var(--space-4)" }}>
                     <div className="options-grid mb-3">
                       {Array.from({ length: task.optionsCount }).map((_, optIndex) => {
                         const letter = String.fromCharCode(65 + optIndex);
@@ -181,7 +181,7 @@ export const VariantsPage: React.FC = () => {
                 
                 {task.type === 'SPECIFIC_ANSWER' && (
                   <div className="input-group mb-3">
-                    <label className="text-xs font-semibold text-gray-600 mb-1 block">Correct Answer (Math/Text)</label>
+                    <label className="input-label">Correct Answer (Math/Text)</label>
                     <input 
                       type="text" 
                       className="form-input" 
@@ -193,7 +193,7 @@ export const VariantsPage: React.FC = () => {
                 )}
 
                 {task.type === 'WRITTEN_WORK' && (
-                  <div className="mb-3">
+                  <div style={{ marginBottom: "var(--space-3)" }}>
                     <label className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg cursor-pointer border border-blue-100 transition-colors hover:bg-blue-100">
                       <input 
                         type="checkbox" 
@@ -206,7 +206,7 @@ export const VariantsPage: React.FC = () => {
                     
                     {!task.requiresAdmin && (
                       <div className="input-group mt-3">
-                        <label className="text-xs font-semibold text-gray-600 mb-1 block">Specific Answer</label>
+                        <label className="input-label">Specific Answer</label>
                         <input 
                           type="text" 
                           className="form-input" 
@@ -246,34 +246,34 @@ export const VariantsPage: React.FC = () => {
   }
 
   return (
-    <div className="page pb-40">
+    <div className="page">
       <div className="page-header mb-4">
         <h1 className="page-header__title gradient-text">Create Variant</h1>
         <Settings className="text-blue-500" />
       </div>
 
       <div className="card glass-form mb-5">
-        <div className="flex flex-col gap-4">
+        <div className="section">
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Title</label>
+            <label className="input-label">Title</label>
             <input className="form-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="E.g. Final Test 2026" />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Description (Optional)</label>
+            <label className="input-label">Description (Optional)</label>
             <textarea className="form-textarea min-h-[60px]" value={description} onChange={e => setDescription(e.target.value)} placeholder="Any special instructions..." />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="stats-grid">
             <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">Starts At</label>
+              <label className="input-label">Starts At</label>
               <div className="relative">
                 <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type="datetime-local" className="form-input pl-8 text-sm" value={startsAt} onChange={e => setStartsAt(e.target.value)} />
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">Deadline</label>
+              <label className="input-label">Deadline</label>
               <div className="relative">
                 <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type="datetime-local" className="form-input pl-8 text-sm" value={deadline} onChange={e => setDeadline(e.target.value)} />
@@ -281,7 +281,7 @@ export const VariantsPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="upload-box mt-2 py-4 border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 transition-colors">
+          <div className="upload-box">
             <FileText size={24} className="text-blue-500 mb-2" />
             <span className="text-sm font-semibold text-blue-700">Upload Task File (PDF/Word/Images)</span>
           </div>

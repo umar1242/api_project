@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Clock, ChevronRight } from 'lucide-react';
 import { apiClient } from '../api/client';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 
 export const TestsPage: React.FC = () => {
   const [tests, setTests] = useState<any[]>([]);

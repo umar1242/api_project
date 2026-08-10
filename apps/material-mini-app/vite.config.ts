@@ -4,9 +4,13 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
     alias: { '@': '/src' },
   },
   server: {
+    fs: {
+      allow: ["../.."]
+    },
     port: 5176,
     host: true,
     proxy: {

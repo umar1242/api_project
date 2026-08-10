@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Trophy, Medal, Star } from 'lucide-react';
 import { apiClient } from '../api/client';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 
 export const LeaderboardPage: React.FC = () => {
   const [leaders, setLeaders] = useState<any[]>([]);

@@ -65,7 +65,7 @@ export const GradeSubmissionPage: React.FC = () => {
   const { variant, user, answers } = submission;
 
   return (
-    <div className="page pb-40">
+    <div className="page">
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md pb-3 pt-2 -mx-4 px-4 border-b border-gray-100 shadow-sm flex items-center mb-4">
         <button onClick={() => navigate('/submissions')} className="text-gray-500 hover:text-gray-800 mr-2">
           <ArrowLeft size={24} />
@@ -93,7 +93,7 @@ export const GradeSubmissionPage: React.FC = () => {
               <div className="bg-gray-50 p-3 rounded-lg mb-4 text-sm font-medium text-gray-700">
                 <div className="mb-1 text-xs text-gray-500 uppercase">Student's Answer:</div>
                 {ans?.answer ? (
-                  <div className="text-gray-900">{ans.answer}</div>
+                  <div>{ans.answer}</div>
                 ) : (
                   <div className="text-gray-400 italic">No answer provided</div>
                 )}
@@ -105,9 +105,9 @@ export const GradeSubmissionPage: React.FC = () => {
               </div>
 
               {needsGrading ? (
-                <div className="flex flex-col gap-3">
+                <div className="section">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Score (Points):</label>
+                    <label className="input-label">Score (Points):</label>
                     <input 
                       type="number" 
                       className="form-input" 
@@ -117,7 +117,7 @@ export const GradeSubmissionPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Feedback (Optional):</label>
+                    <label className="input-label">Feedback (Optional):</label>
                     <textarea 
                       className="form-textarea" 
                       placeholder="Good job, but..."
@@ -127,8 +127,8 @@ export const GradeSubmissionPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">Auto-graded Score:</span>
+                <div className="progress-section__header">
+                  <span>Auto-graded Score:</span>
                   <span className={`font-bold ${ans?.score > 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {ans?.score} pts
                   </span>
@@ -140,7 +140,7 @@ export const GradeSubmissionPage: React.FC = () => {
       </div>
 
       <div className="fixed bottom-20 left-4 right-4 z-50">
-        <button className="btn btn--full glass-btn shadow-lg shadow-blue-500/30" onClick={handleSubmit}>
+        <button className="btn btn--primary btn--full glass-btn" onClick={handleSubmit}>
           <CheckCircle size={20} className="mr-2" />
           Submit Grades
         </button>

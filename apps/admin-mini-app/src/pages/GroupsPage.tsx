@@ -30,11 +30,14 @@ export const GroupsPage: React.FC = () => {
     try {
       setLoading(true);
       const [groupsRes, coursesRes] = await Promise.all([
-        apiClient.get<{ data: Group[] }>('/groups'),
-        apiClient.get<{ data: Course[] }>('/courses')
+        apiClient.get('/groups'),
+        apiClient.get('/courses')
       ]);
-      setGroups(groupsRes.data.data || []);
-      setCourses(coursesRes.data.data || []);
+      // API returns array directly (not wrapped in {data: [...]})
+      const groupsData = Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.data || []);
+      const coursesData = Array.isArray(coursesRes.data) ? coursesRes.data : (coursesRes.data?.data || []);
+      setGroups(groupsData);
+      setCourses(coursesData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -67,26 +70,26 @@ export const GroupsPage: React.FC = () => {
   return (
     <div className="p-4">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Groups</h1>
+        <h1 className="stat-card__value">Groups</h1>
         <p className="text-sm text-gray-500 mt-1">To add a group, add the Registrar Bot to a Telegram group.</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="section">
         {groups.length === 0 ? (
           <div className="text-center py-10 card empty-state">
             <Users className="mx-auto h-12 w-12 text-gray-300 mb-2" />
-            <p className="text-gray-500">No groups found</p>
+            <p>No groups found</p>
           </div>
         ) : (
           groups.map(group => (
             <div key={group.id} className="card flex flex-col space-y-2">
               <div className="flex justify-between items-start">
-                <h2 className="text-lg font-bold text-gray-900">{group.title}</h2>
+                <h2 style={{ fontSize: "18px", fontWeight: "bold", color: "var(--tg-text)" }}>{group.title}</h2>
                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${group.courseId ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {group.courseId ? 'Linked' : 'Unlinked'}
                 </span>
               </div>
-              <p className="text-sm text-gray-600">Chat ID: <span className="font-mono text-xs">{group.telegramChatId}</span></p>
+              <p style={{ fontSize: "14px", color: "var(--tg-hint)" }}>Chat ID: <span className="font-mono text-xs">{group.telegramChatId}</span></p>
               
               {group.course ? (
                 <div className="bg-blue-50 text-blue-800 p-2 rounded text-sm mt-2">

@@ -31,11 +31,13 @@ export const CoursesPage: React.FC = () => {
     try {
       setLoading(true);
       const [coursesRes, groupsRes] = await Promise.all([
-        apiClient.get<{ data: Course[] }>('/courses'),
+        apiClient.get('/courses'),
         apiClient.get('/groups')
       ]);
-      setCourses(coursesRes.data.data || []);
-      const allGroups = groupsRes.data || [];
+      // API returns array directly (not wrapped in {data: [...]})
+      const coursesData = Array.isArray(coursesRes.data) ? coursesRes.data : (coursesRes.data?.data || []);
+      const allGroups = Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.data || []);
+      setCourses(coursesData);
       setUnassignedGroups(allGroups.filter((g: any) => !g.courseId));
     } catch (err) {
       console.error(err);
@@ -107,18 +109,18 @@ export const CoursesPage: React.FC = () => {
   if (isCreating) {
     if (step === 3) {
       return (
-        <div className="page pb-40">
+        <div className="page">
           <div className="empty-state glass-form mt-10">
             <CheckCircle size={64} className="text-green-500 mb-4" />
-            <h2 className="empty-state__title text-2xl font-bold mb-2">Course Created!</h2>
-            <p className="text-center text-gray-600 mb-6">Share this referral link with your students to let them enroll.</p>
-            <div className="bg-gray-100 p-3 rounded-xl mb-6 break-all text-sm font-mono text-gray-800 border border-gray-200 w-full text-center">
+            <h2 className="empty-state__title">Course Created!</h2>
+            <p className="empty-state__desc">Share this referral link with your students to let them enroll.</p>
+            <div style={{ background: "var(--tg-secondary)", padding: "var(--space-3)", borderRadius: "var(--radius-lg)", wordBreak: "break-all", fontFamily: "monospace", border: "1px solid var(--tg-hint)", textAlign: "center", marginBottom: "var(--space-6)" }}>
               {createdRefLink}
             </div>
-            <button className="btn btn--primary btn--full glass-btn shadow-lg shadow-blue-500/30" onClick={handleShare}>
+            <button className="btn btn--primary btn--full glass-btn" onClick={handleShare}>
               Share via Telegram
             </button>
-            <button className="btn btn--full bg-gray-200 text-gray-800 mt-3" onClick={resetForm}>
+            <button className="btn btn--secondary btn--full" onClick={resetForm}>
               Back to Courses
             </button>
           </div>
@@ -128,14 +130,14 @@ export const CoursesPage: React.FC = () => {
 
     if (step === 2) {
       return (
-        <div className="page pb-40">
+        <div className="page">
           <div className="page-header mb-4">
             <h1 className="page-header__title gradient-text">Course Details</h1>
           </div>
           
-          <div className="card glass-form space-y-4">
+          <div className="card glass-form section">
             <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">Short Description</label>
+              <label className="input-label">Short Description</label>
               <textarea 
                 className="form-textarea min-h-[80px]"
                 value={description}
@@ -145,7 +147,7 @@ export const CoursesPage: React.FC = () => {
             </div>
             
             <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">Course Plan (Optional)</label>
+              <label className="input-label">Course Plan (Optional)</label>
               <textarea 
                 className="form-textarea min-h-[80px]"
                 value={plan}
@@ -154,17 +156,17 @@ export const CoursesPage: React.FC = () => {
               />
             </div>
             
-            <div className="upload-box mt-2 py-4 border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 transition-colors">
+            <div className="upload-box">
               <FileText size={24} className="text-blue-500 mb-2" />
               <span className="text-sm font-semibold text-blue-700">Upload Plan File</span>
             </div>
           </div>
 
           <div className="fixed bottom-20 left-4 right-4 z-50 flex gap-2">
-            <button className="btn btn--full bg-white text-gray-800 border border-gray-200 shadow-sm flex-1" onClick={() => setStep(1)}>
+            <button className="btn btn--secondary btn--full" onClick={() => setStep(1)}>
               Back
             </button>
-            <button className="btn btn--primary btn--full glass-btn shadow-lg shadow-blue-500/30 flex-1 dynamic-glow" onClick={handleCreate}>
+            <button className="btn btn--primary btn--full glass-btn" onClick={handleCreate}>
               Finish
               <CheckCircle size={18} className="ml-2" />
             </button>
@@ -174,15 +176,15 @@ export const CoursesPage: React.FC = () => {
     }
 
     return (
-      <div className="page pb-40">
+      <div className="page">
         <div className="page-header mb-4">
           <button onClick={resetForm} className="text-gray-500 mr-2"><ArrowRight size={20} className="rotate-180" /></button>
           <h1 className="page-header__title gradient-text">Create Course</h1>
         </div>
         
-        <div className="card glass-form space-y-4">
+        <div className="card glass-form section">
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Course Title</label>
+            <label className="input-label">Course Title</label>
             <input 
               required
               type="text" 
@@ -194,8 +196,8 @@ export const CoursesPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Priority / Type</label>
-            <div className="flex gap-2">
+            <label className="input-label">Priority / Type</label>
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
               <button 
                 type="button"
                 className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all ${type === 'FREE' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-100 bg-gray-50 text-gray-400'}`}
@@ -214,7 +216,7 @@ export const CoursesPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Link to Telegram Group</label>
+            <label className="input-label">Link to Telegram Group</label>
             {unassignedGroups.length === 0 ? (
               <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-medium flex items-start gap-2">
                 <Users size={16} className="shrink-0 mt-0.5" />
@@ -237,7 +239,7 @@ export const CoursesPage: React.FC = () => {
 
         <div className="fixed bottom-20 left-4 right-4 z-50">
           <button 
-            className="btn btn--primary btn--full glass-btn shadow-lg shadow-blue-500/30 dynamic-glow disabled:opacity-50" 
+            className="btn btn--primary btn--full glass-btn" 
             onClick={handleNext}
             disabled={!title || !selectedGroupId}
           >
@@ -250,7 +252,7 @@ export const CoursesPage: React.FC = () => {
   }
 
   return (
-    <div className="page pb-40">
+    <div className="page">
       <div className="page-header mb-6">
         <h1 className="page-header__title gradient-text">Courses</h1>
         <button 
@@ -261,9 +263,9 @@ export const CoursesPage: React.FC = () => {
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="section">
         {courses.length === 0 ? (
-          <div className="text-center py-10 card empty-state glass-form">
+          <div className="empty-state glass-form">
             <BookOpen className="mx-auto h-12 w-12 text-gray-300 mb-2" />
             <h2 className="empty-state__title">No courses yet</h2>
             <p className="empty-state__desc text-sm">Create your first course to get started.</p>
@@ -271,8 +273,8 @@ export const CoursesPage: React.FC = () => {
         ) : (
           courses.map(course => (
             <div key={course.id} className="card glass-form interactive-card">
-              <div className="flex justify-between items-start mb-2">
-                <h2 className="text-lg font-bold text-gray-900">{course.title}</h2>
+              <div className="progress-section__header">
+                <h2 style={{ fontSize: "18px", fontWeight: "bold", color: "var(--tg-text)" }}>{course.title}</h2>
                 <span className={`badge ${course.type === 'FREE' ? 'badge--green' : 'badge--purple'}`}>
                   {course.type}
                 </span>
@@ -280,7 +282,7 @@ export const CoursesPage: React.FC = () => {
               <p className="text-sm text-gray-600 mb-3 line-clamp-2">{course.description || 'No description provided'}</p>
               
               <div className="bg-white/50 p-2 rounded-lg border border-gray-100 flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500 uppercase">Referral Link</span>
+                <span className="section__title">Referral Link</span>
                 <span className="text-xs text-blue-500 font-mono font-medium">...{course.refLink}</span>
               </div>
             </div>

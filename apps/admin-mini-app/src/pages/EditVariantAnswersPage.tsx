@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { apiClient } from '../api/client';
-import { Loader } from '../components/Loader';
+import { Loader } from '@shared-ui/core';
 import { MathKeyboard } from '../components/MathKeyboard';
 import WebAppModule from '@twa-dev/sdk';
 const WebApp = (WebAppModule as any).default || WebAppModule;

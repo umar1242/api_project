@@ -8,22 +8,22 @@
 
 /* ── CSS Custom Properties ────────────────────────────────────────────────── */
 :root {
-  /* Telegram theme fallbacks (overridden by the real app in production, but we enforce Claymorphism here) */
-  --tg-bg:         #F0FDFA; /* var(--tg-theme-bg-color) ignored to enforce brand */
-  --tg-text:       #134E4A;
-  --tg-hint:       #0D9488;
-  --tg-link:       #D97706;
-  --tg-btn:        #0D9488;
+  /* Telegram theme fallbacks (Claymorphism overrides) */
+  --tg-bg:         #FFFFFF;
+  --tg-text:       #1E1E1E;
+  --tg-hint:       #8C8C8C;
+  --tg-link:       #8B78FF;
+  --tg-btn:        #8B78FF;
   --tg-btn-text:   #FFFFFF;
-  --tg-secondary:  #E8F1F4;
-  --tg-accent:     #D97706;
-  --tg-destructive:#DC2626;
+  --tg-secondary:  #F4F5F9;
+  --tg-accent:     #FFB23F;
+  --tg-destructive:#FF6B6B;
 
   /* Design tokens */
-  --radius-sm:  8px;
-  --radius-md:  12px;
-  --radius-lg:  16px;
-  --radius-xl:  20px;
+  --radius-sm:  12px;
+  --radius-md:  16px;
+  --radius-lg:  24px;
+  --radius-xl:  32px;
   --radius-full: 9999px;
 
   --space-1:  4px;
@@ -35,20 +35,24 @@
   --space-8:  32px;
   --space-10: 40px;
 
-  --shadow-sm: 0 1px 2px rgba(13,148,136,.1);
-  --shadow-md: inset 0 -4px 0 rgba(0,0,0,0.1), 0 4px 6px rgba(13,148,136,.15);
-  --shadow-lg: inset 0 -6px 0 rgba(0,0,0,0.1), 0 10px 15px rgba(13,148,136,.2);
+  --shadow-sm: 4px 4px 8px rgba(0,0,0,0.04), -4px -4px 8px #ffffff;
+  --shadow-md: 8px 8px 20px rgba(0,0,0,0.05), -8px -8px 20px #ffffff;
+  --shadow-lg: 12px 12px 30px rgba(0,0,0,0.06), -12px -12px 30px #ffffff;
+  
+  --shadow-clay-btn: 4px 4px 12px rgba(139,120,255,0.3), inset 2px 2px 4px rgba(255,255,255,0.4), inset -2px -2px 4px rgba(0,0,0,0.1);
+  --shadow-clay-card: 10px 10px 24px rgba(0,0,0,0.05), -10px -10px 24px #ffffff, inset 2px 2px 4px rgba(255,255,255,1), inset -2px -2px 4px rgba(0,0,0,0.02);
+  --shadow-clay-inset: inset 4px 4px 8px rgba(0,0,0,0.05), inset -4px -4px 8px rgba(255,255,255,1);
 
-  --transition: 0.2s ease;
+  --transition: 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Semantic colors */
-  --color-success:  #22c55e;
-  --color-warning:  #f59e0b;
+  --color-success:  #4ADE80;
+  --color-warning:  #FFB23F;
   --color-error:    var(--tg-destructive);
   --color-info:     var(--tg-btn);
 
   /* Bottom nav height — used for main padding */
-  --nav-height: 64px;
+  --nav-height: 80px;
 }
 
 /* ── Reset ───────────────────────────────────────────────────────────────── */
@@ -125,10 +129,10 @@ button {
 /* ── Card ────────────────────────────────────────────────────────────────── */
 .card {
   background: var(--tg-bg);
-  border-radius: 32px;
+  border-radius: var(--radius-xl);
   padding: var(--space-4) var(--space-5);
-  box-shadow: var(--shadow-md);
-  border: 2px solid var(--tg-hint);
+  box-shadow: var(--shadow-clay-card);
+  border: none;
 }
 
 /* ── Section ─────────────────────────────────────────────────────────────── */
@@ -165,18 +169,19 @@ button {
   align-items: center;
   gap: var(--space-2);
   padding: 12px var(--space-5);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   font-size: 16px;
   font-weight: 700;
   transition: opacity var(--transition), transform var(--transition);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-clay-btn);
 }
 .btn:active { transform: scale(0.92); box-shadow: var(--shadow-sm); }
 
 .btn--primary {
-  background: linear-gradient(135deg, #0D9488 0%, #2DD4BF 100%);
+  background: linear-gradient(135deg, #8B78FF 0%, #6B4EFF 100%);
   color: var(--tg-btn-text);
   border: none;
+  box-shadow: var(--shadow-clay-btn);
 }
 
 .btn--secondary {
@@ -202,14 +207,15 @@ button {
   width: 100%;
   max-width: 600px;
   height: var(--nav-height);
-  background: var(--tg-bg);
-  border-top: 1px solid rgba(0,0,0,.07);
+  background: rgba(255, 255, 255, 0.85);
+  border-top: none;
   display: flex;
   align-items: stretch;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 100;
-  box-shadow: 0 -4px 16px rgba(0,0,0,.06);
+  box-shadow: 0 -10px 30px rgba(0,0,0,.04);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
 .bottom-nav__item {
@@ -234,14 +240,17 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-md);
-  transition: background var(--transition);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-xl);
+  transition: all var(--transition);
 }
 
 .bottom-nav__item--active .bottom-nav__icon {
-  background: rgba(36,129,204,.12);
+  background: linear-gradient(135deg, #8B78FF 0%, #6B4EFF 100%);
+  color: #fff;
+  box-shadow: var(--shadow-clay-btn);
+  transform: translateY(-4px);
 }
 
 .bottom-nav__label {
@@ -322,10 +331,10 @@ button {
 
 .lesson-card {
   background: var(--tg-bg);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: var(--space-4);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(0,0,0,.04);
+  box-shadow: var(--shadow-clay-card);
+  border: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -435,19 +444,18 @@ button {
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  padding: 8px var(--space-3);
+  padding: 10px var(--space-3);
   border-radius: var(--radius-md);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--tg-hint);
-  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+  transition: all var(--transition);
 }
 
 .filter-tab--active {
-  background: var(--tg-bg);
-  color: var(--tg-text);
-  box-shadow: var(--shadow-sm);
-  font-weight: 600;
+  background: #fff;
+  color: var(--tg-btn);
+  box-shadow: var(--shadow-clay-card);
 }
 
 /* ── Progress Section ────────────────────────────────────────────────────── */
@@ -480,9 +488,10 @@ button {
 
 .progress-bar__fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--tg-btn) 0%, #38bdf8 100%);
+  background: linear-gradient(90deg, #8B78FF 0%, #FFB23F 100%);
   border-radius: var(--radius-full);
-  transition: width 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: var(--shadow-clay-btn);
 }
 
 .progress-section__sub {
@@ -501,10 +510,10 @@ button {
 
 .stat-card {
   background: var(--tg-bg);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: var(--space-4);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(0,0,0,.04);
+  box-shadow: var(--shadow-clay-card);
+  border: none;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -570,10 +579,10 @@ button {
 }
 
 .profile-hero__avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-xl);
-  background: linear-gradient(135deg, var(--tg-btn) 0%, #38bdf8 100%);
+  width: 72px;
+  height: 72px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #8B78FF 0%, #6B4EFF 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -581,7 +590,7 @@ button {
   font-weight: 700;
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(36,129,204,.3);
+  box-shadow: var(--shadow-clay-btn);
 }
 
 .profile-hero__info {
@@ -645,15 +654,14 @@ button {
 
 /* ── Custom UI for Variants Page ─────────────────────────────────────────── */
 .glass-form {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05);
+  background: var(--tg-bg);
+  border-radius: var(--radius-xl);
+  border: none;
+  box-shadow: var(--shadow-clay-card);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #2481cc 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, #8B78FF 0%, #6B4EFF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -673,20 +681,20 @@ button {
 
 .form-input, .form-textarea, .form-select {
   width: 100%;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
+  background: var(--tg-secondary);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 16px 16px;
   font-size: 15px;
   color: var(--tg-text);
   outline: none;
   transition: all var(--transition);
+  box-shadow: var(--shadow-clay-inset);
 }
 
 .form-input:focus, .form-textarea:focus, .form-select:focus {
-  border-color: var(--tg-btn);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(36, 129, 204, 0.1);
+  box-shadow: var(--shadow-clay-card);
 }
 
 .form-textarea {
@@ -774,10 +782,10 @@ button {
 }
 
 .glass-btn {
-  background: linear-gradient(135deg, var(--tg-btn) 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, #8B78FF 0%, #6B4EFF 100%);
   color: #fff;
   border: none;
-  box-shadow: 0 4px 15px rgba(36, 129, 204, 0.3);
+  box-shadow: var(--shadow-clay-btn);
 }
 
 .dynamic-glow {
