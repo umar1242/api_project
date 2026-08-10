@@ -21,15 +21,11 @@ export class VariantTaskResponseDto {
 
   @ApiPropertyOptional()
   optionsCount?: number;
+}
 
+export class VariantTaskAdminResponseDto extends VariantTaskResponseDto {
   @ApiPropertyOptional()
   correctAnswer?: string;
-
-  @ApiProperty()
-  createdAt: Date;
-
-  @ApiProperty()
-  updatedAt: Date;
 }
 
 export class VariantResponseDto {
@@ -68,6 +64,11 @@ export class VariantResponseDto {
 
   @ApiPropertyOptional({ type: () => [VariantTaskResponseDto] })
   tasks?: VariantTaskResponseDto[];
+}
+
+export class VariantAdminResponseDto extends VariantResponseDto {
+  @ApiPropertyOptional({ type: () => [VariantTaskAdminResponseDto] })
+  tasks?: VariantTaskAdminResponseDto[];
 }
 
 export class VariantPublicTaskResponseDto {

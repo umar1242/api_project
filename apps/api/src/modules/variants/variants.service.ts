@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 import { CreateVariantDto } from "./dto/create-variant.dto";
 import {
@@ -42,14 +42,53 @@ export class VariantsService {
     variant: any,
   ): import("./dto/variant-response.dto").VariantResponseDto {
     return {
-      ...variant,
       id: variant.id.toString(),
+      title: variant.title,
+      description: variant.description,
+      type: variant.type,
+      fileUrl: variant.fileUrl,
+      startsAt: variant.startsAt,
+      deadlineAt: variant.deadlineAt,
       courseId: variant.courseId?.toString(),
       groupId: variant.groupId?.toString(),
+      createdAt: variant.createdAt,
+      updatedAt: variant.updatedAt,
       tasks: variant.tasks?.map((task: VariantTask) => ({
-        ...task,
         id: task.id.toString(),
         variantId: task.variantId.toString(),
+        type: task.type,
+        orderIndex: task.orderIndex,
+        requiresAdmin: task.requiresAdmin,
+        requiresAttachment: task.requiresAttachment,
+        optionsCount: task.optionsCount,
+      })),
+    };
+  }
+
+  private mapVariantToAdminDto(
+    variant: any,
+  ): import("./dto/variant-response.dto").VariantAdminResponseDto {
+    return {
+      id: variant.id.toString(),
+      title: variant.title,
+      description: variant.description,
+      type: variant.type,
+      fileUrl: variant.fileUrl,
+      startsAt: variant.startsAt,
+      deadlineAt: variant.deadlineAt,
+      courseId: variant.courseId?.toString(),
+      groupId: variant.groupId?.toString(),
+      createdAt: variant.createdAt,
+      updatedAt: variant.updatedAt,
+      tasks: variant.tasks?.map((task: VariantTask) => ({
+        id: task.id.toString(),
+        variantId: task.variantId.toString(),
+        type: task.type,
+        orderIndex: task.orderIndex,
+        requiresAdmin: task.requiresAdmin,
+        requiresAttachment: task.requiresAttachment,
+        optionsCount: task.optionsCount,
+        correctAnswer: task.correctAnswer,
       })),
     };
   }
@@ -94,7 +133,7 @@ export class VariantsService {
         groupId: data.groupId ? BigInt(data.groupId) : null,
         tasks: {
           create:
-            data.tasks?.map((task) => ({
+            data.tasks?.map((task: import("./dto/create-variant.dto").CreateVariantTaskDto) => ({
               type: task.type,
               orderIndex: task.orderIndex,
               requiresAdmin: task.requiresAdmin || false,
@@ -108,24 +147,56 @@ export class VariantsService {
         tasks: true,
       },
     });
-    return this.mapVariantToDto(variant);
+    return this.mapVariantToAdminDto(variant);
   }
 
-  async findAll() {
-    const variants = await this.prisma.variant.findMany({
-      include: { tasks: true },
-      orderBy: { createdAt: "desc" },
-    });
-    return variants.map((v: Variant & { tasks: VariantTask[] }) => this.mapVariantToPublicDto(v));
+  async findAll(telegramId?: bigint) {
+    let variants;
+    if (telegramId) {
+      const enrollments = await this.prisma.enrollment.findMany({
+        where: { user: { telegramId }, status: { in: ["ACTIVE", "COMPLETED"] } }
+      });
+      const groupIds = enrollments.map((e: import("@prisma/client").Enrollment) => e.groupId);
+      variants = await this.prisma.variant.findMany({
+        where: { OR: [{ groupId: { in: groupIds } }, { groupId: null }] },
+        include: { tasks: true },
+        orderBy: { createdAt: "desc" },
+      });
+    } else {
+      variants = await this.prisma.variant.findMany({
+        include: { tasks: true },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+    return variants.map((v: Variant & { tasks: VariantTask[] }) => this.mapVariantToDto(v));
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, telegramId?: bigint) {
     const variant = await this.prisma.variant.findUnique({
       where: { id: BigInt(id) },
       include: { tasks: true },
     });
     if (!variant) throw new NotFoundException("Variant not found");
-    return this.mapVariantToPublicDto(variant);
+
+    if (telegramId && variant.groupId) {
+      const enrollment = await this.prisma.enrollment.findFirst({
+        where: { groupId: variant.groupId, user: { telegramId }, status: { in: ["ACTIVE", "COMPLETED"] } }
+      });
+      if (!enrollment) {
+        throw new ForbiddenException("User is not enrolled in the group for this variant");
+      }
+    }
+
+    return this.mapVariantToDto(variant);
+  }
+
+  async findOneAdmin(id: string) {
+    const variant = await this.prisma.variant.findUnique({
+      where: { id: BigInt(id) },
+      include: { tasks: true },
+    });
+    if (!variant) throw new NotFoundException("Variant not found");
+    return this.mapVariantToAdminDto(variant);
   }
 
   async updateTasks(
@@ -149,7 +220,17 @@ export class VariantsService {
   async submitAnswers(
     variantId: string,
     data: import("./dto/submit-variant.dto").SubmitVariantDto,
+    telegramId?: bigint,
   ) {
+    if (telegramId) {
+      const u = await this.prisma.user.findUnique({ where: { telegramId } });
+      if (!u) throw new ForbiddenException("User not found");
+      if (data.userId && data.userId !== u.id.toString()) {
+        throw new ForbiddenException("Cannot submit answers for another user");
+      }
+      data.userId = u.id.toString();
+    }
+
     const variant = await this.prisma.variant.findUnique({
       where: { id: BigInt(variantId) },
       include: { tasks: true, group: true },

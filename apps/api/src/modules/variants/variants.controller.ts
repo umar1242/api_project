@@ -31,10 +31,10 @@ export class VariantsController {
   }
 
   @ApiOperation({ summary: "Get all variants" })
-  @ApiResponse({ status: 200, type: [VariantPublicResponseDto] })
+  @ApiResponse({ status: 200, type: [VariantResponseDto] })
   @Get()
-  findAll(): Promise<VariantPublicResponseDto[]> {
-    return this.variantsService.findAll();
+  findAll(@Req() req: any): Promise<VariantResponseDto[]> {
+    return this.variantsService.findAll(req.telegramUser?.id ? BigInt(req.telegramUser.id) : undefined);
   }
 
   @ApiOperation({ summary: "Get pending submissions requiring admin review" })
@@ -83,10 +83,10 @@ export class VariantsController {
   }
 
   @ApiOperation({ summary: "Get a variant by ID" })
-  @ApiResponse({ status: 200, type: VariantPublicResponseDto })
+  @ApiResponse({ status: 200, type: VariantResponseDto })
   @Get(":id")
-  findOne(@Param("id") id: string): Promise<VariantPublicResponseDto> {
-    return this.variantsService.findOne(id);
+  findOne(@Param("id") id: string, @Req() req: any): Promise<VariantResponseDto> {
+    return this.variantsService.findOne(id, req.telegramUser?.id ? BigInt(req.telegramUser.id) : undefined);
   }
 
   @ApiOperation({ summary: "Update tasks for a variant" })
@@ -107,10 +107,15 @@ export class VariantsController {
   @ApiResponse({ status: 201, type: VariantSubmissionResponseDto })
   @Post(":id/submissions")
   submitAnswers(
+    @Req() req: any,
     @Param("id") id: string,
     @Body()
     submitVariantDto: import("./dto/submit-variant.dto").SubmitVariantDto,
   ): Promise<VariantSubmissionResponseDto> {
-    return this.variantsService.submitAnswers(id, submitVariantDto);
+    return this.variantsService.submitAnswers(
+      id,
+      submitVariantDto,
+      req.telegramUser?.id ? BigInt(req.telegramUser.id) : undefined,
+    );
   }
 }
