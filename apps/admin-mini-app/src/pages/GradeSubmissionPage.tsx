@@ -1,0 +1,150 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { CheckCircle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { apiClient } from '../api/client';
+import WebAppModule from "@twa-dev/sdk";
+const WebApp = (WebAppModule as any).default || WebAppModule;
+
+export const GradeSubmissionPage: React.FC = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [submission, setSubmission] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // scores map: taskId -> number
+  const [scores, setScores] = useState<Record<string, number>>({});
+  // feedback map: taskId -> string
+  const [feedback, setFeedback] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchSub = async () => {
+      try {
+        const { data } = await apiClient.get(`/variants/submissions/${id}`);
+        // pre-fill scores if they exist
+        const initialScores: Record<string, number> = {};
+        const initialFeedback: Record<string, string> = {};
+        data.answers.forEach((ans: any) => {
+          if (ans.score !== null) initialScores[ans.taskId] = ans.score;
+          if (ans.feedback) initialFeedback[ans.taskId] = ans.feedback;
+        });
+        setScores(initialScores);
+        setFeedback(initialFeedback);
+        setSubmission(data);
+      } catch (err) {
+        WebApp.showAlert('Submission not found');
+        navigate('/submissions');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSub();
+  }, [id, navigate]);
+
+  const handleSubmit = async () => {
+    WebApp.HapticFeedback.notificationOccurred('success');
+    WebApp.showConfirm('Grade this submission?', async (confirm: boolean) => {
+      if(confirm) {
+        try {
+          await apiClient.post(`/variants/submissions/${id}/grade`, {
+            scores,
+            feedback,
+          });
+          WebApp.showAlert('Submission graded successfully!');
+          navigate('/submissions');
+        } catch (error) {
+          WebApp.HapticFeedback.notificationOccurred('error');
+          WebApp.showAlert('Failed to grade submission');
+        }
+      }
+    });
+  };
+
+  if (loading) return <div className="app-shell"><div className="loader-container"><div className="loader-spinner"/></div></div>;
+  if (!submission) return null;
+
+  const { variant, user, answers } = submission;
+
+  return (
+    <div className="page pb-40">
+      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md pb-3 pt-2 -mx-4 px-4 border-b border-gray-100 shadow-sm flex items-center mb-4">
+        <button onClick={() => navigate('/submissions')} className="text-gray-500 hover:text-gray-800 mr-2">
+          <ArrowLeft size={24} />
+        </button>
+        <div className="flex flex-col">
+          <span className="font-bold text-lg leading-tight">{user.fullName}</span>
+          <span className="text-xs text-blue-500 font-semibold">{variant.title}</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-5">
+        {variant.tasks?.map((task: any) => {
+          const ans = answers.find((a: any) => a.taskId === task.id);
+          const needsGrading = task.requiresAdmin || task.type === 'WRITTEN_WORK';
+
+          return (
+            <div key={task.id} className={`card glass-form shadow-sm ${needsGrading ? 'border-blue-300' : 'border-gray-100'}`}>
+              <div className="flex justify-between items-center mb-3">
+                <span className="font-bold text-gray-800 text-lg">Task {task.orderIndex}</span>
+                <span className="text-xs font-semibold px-2 py-1 bg-gray-100 rounded-md text-gray-500 uppercase tracking-wider">
+                  {task.type.replace('_', ' ')}
+                </span>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-lg mb-4 text-sm font-medium text-gray-700">
+                <div className="mb-1 text-xs text-gray-500 uppercase">Student's Answer:</div>
+                {ans?.answer ? (
+                  <div className="text-gray-900">{ans.answer}</div>
+                ) : (
+                  <div className="text-gray-400 italic">No answer provided</div>
+                )}
+                {ans?.fileUrl && (
+                  <a href={ans.fileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-500 mt-2">
+                    <ImageIcon size={14} /> View Attached File
+                  </a>
+                )}
+              </div>
+
+              {needsGrading ? (
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Score (Points):</label>
+                    <input 
+                      type="number" 
+                      className="form-input" 
+                      placeholder="e.g. 5"
+                      value={scores[task.id] !== undefined ? scores[task.id] : ''}
+                      onChange={(e) => setScores(prev => ({ ...prev, [task.id]: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Feedback (Optional):</label>
+                    <textarea 
+                      className="form-textarea" 
+                      placeholder="Good job, but..."
+                      value={feedback[task.id] || ''}
+                      onChange={(e) => setFeedback(prev => ({ ...prev, [task.id]: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Auto-graded Score:</span>
+                  <span className={`font-bold ${ans?.score > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {ans?.score} pts
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="fixed bottom-20 left-4 right-4 z-50">
+        <button className="btn btn--full glass-btn shadow-lg shadow-blue-500/30" onClick={handleSubmit}>
+          <CheckCircle size={20} className="mr-2" />
+          Submit Grades
+        </button>
+      </div>
+    </div>
+  );
+};

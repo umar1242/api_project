@@ -1,0 +1,525 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Prisma schema — Telegram Bot Network, Unified API
+// Stage 0: Core entities (Users, Courses, Groups, Enrollments)
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider      = "prisma-client-js"
+  // linux-musl-openssl-3.0.x = Alpine 3.17+ (Docker)
+  // native = local development (Windows/Mac)
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  STUDENT
+  CURATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  PAUSED
+  BANNED
+}
+
+enum CourseType {
+  FREE
+  PAID
+}
+
+enum EnrollmentStatus {
+  ACTIVE // Currently studying
+  PAUSED // Temporarily paused
+  EXCLUDED // Removed from the course (non-payment, etc.)
+  COMPLETED // Finished the course
+}
+
+// ─── Users ───────────────────────────────────────────────────────────────────
+
+/// All users across the entire bot network identified by their Telegram user ID.
+/// One record = one real person. A user can be enrolled in multiple courses.
+model User {
+  /// Internal surrogate PK (BigInt for PostgreSQL performance, avoids UUID overhead)
+  id         BigInt     @id @default(autoincrement())
+  /// Telegram user_id — the single source of identity across all bots
+  telegramId BigInt     @unique @map("telegram_id")
+  /// Full name as entered in the registration questionnaire
+  fullName   String     @map("full_name") @db.VarChar(255)
+  /// Primary contact phone number
+  phone      String?    @db.VarChar(30)
+  /// Role in the system
+  role       UserRole   @default(STUDENT)
+  /// Account status
+  status     UserStatus @default(ACTIVE)
+  /// Experience Points for Gamification
+  xp         Int        @default(0)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  enrollments       Enrollment[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  VariantSubmission VariantSubmission[]
+
+  @@index([telegramId])
+  @@index([role])
+  @@map("users")
+}
+
+// ─── Courses ─────────────────────────────────────────────────────────────────
+
+/// A course created by an admin. May have multiple groups (classes/streams).
+model Course {
+  id          BigInt     @id @default(autoincrement())
+  title       String     @db.VarChar(255)
+  type        CourseType @default(FREE)
+  description String?    @db.Text
+  /// Optional course plan shown to registering students
+  plan        String?    @db.Text
+  /// Unique referral link slug — shared with prospective students
+  refLink     String     @unique @map("ref_link") @db.VarChar(100)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  groups             Group[]
+  gamificationConfig GamificationConfig?
+  variants           Variant[]
+
+  @@index([refLink])
+  @@map("courses")
+}
+
+// ─── Groups ──────────────────────────────────────────────────────────────────
+
+/// A specific class/stream within a course (e.g., "Morning group — Jan 2025").
+/// Each group maps to a private Telegram chat.
+model Group {
+  id             BigInt   @id @default(autoincrement())
+  courseId       BigInt?  @map("course_id")
+  /// Telegram chat_id of the private group
+  telegramChatId BigInt   @unique @map("telegram_chat_id")
+  title          String   @db.VarChar(255)
+  /// Free-text description of rules, schedule conditions, etc.
+  description    String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  course      Course?      @relation(fields: [courseId], references: [id])
+  enrollments Enrollment[]
+  lessons     Lesson[]
+  materials   Material[]
+  assignments Assignment[]
+  variants    Variant[]
+
+  @@index([courseId])
+  @@index([telegramChatId])
+  @@map("groups")
+}
+
+// ─── Enrollments ─────────────────────────────────────────────────────────────
+
+/// Links a user to a specific group — the student's "seat" in a course.
+/// Status and payment info are tracked here.
+model Enrollment {
+  id            BigInt           @id @default(autoincrement())
+  userId        BigInt           @map("user_id")
+  groupId       BigInt           @map("group_id")
+  status        EnrollmentStatus @default(ACTIVE)
+  /// For paid courses: when payment is due. Null for free courses.
+  paymentDueAt  DateTime?        @map("payment_due_at") @db.Timestamptz
+  /// When the payment was confirmed by admin/curator
+  paymentPaidAt DateTime?        @map("payment_paid_at") @db.Timestamptz
+  /// JSONB for flexible additional metadata (e.g. brief self-description from questionnaire)
+  metadata      Json?            @db.JsonB
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user                  User                   @relation(fields: [userId], references: [id])
+  group                 Group                  @relation(fields: [groupId], references: [id])
+  assignmentSubmissions AssignmentSubmission[]
+  studentStats          StudentStats?
+  shopPurchases         CoinShopPurchase[]
+
+  /// A user can only be enrolled in a group once
+  @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+  @@index([status])
+  @@map("enrollments")
+}
+
+// ─── Stage 3: Lessons & Materials ────────────────────────────────────────────
+
+enum LessonType {
+  ONLINE
+  RECORDED
+}
+
+enum LessonStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum MaterialStatus {
+  PENDING // Not yet published
+  PUBLISHED
+}
+
+/// A lesson within a group's course calendar.
+model Lesson {
+  id          BigInt       @id @default(autoincrement())
+  groupId     BigInt       @map("group_id")
+  title       String       @db.VarChar(255)
+  description String?      @db.Text
+  type        LessonType   @default(ONLINE)
+  status      LessonStatus @default(SCHEDULED)
+  /// When the lesson is scheduled to start
+  startsAt    DateTime     @map("starts_at") @db.Timestamptz
+  /// Duration in minutes
+  durationMin Int          @default(60) @map("duration_min")
+  /// Online: video call link; Recorded: video URL
+  meetingUrl  String?      @map("meeting_url") @db.VarChar(500)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  group       Group        @relation(fields: [groupId], references: [id])
+  materials   Material[]
+  assignments Assignment[]
+
+  @@index([groupId])
+  @@index([startsAt])
+  @@index([status])
+  @@map("lessons")
+}
+
+/// A material file/content attached to a lesson or group.
+model Material {
+  id             BigInt         @id @default(autoincrement())
+  lessonId       BigInt?        @map("lesson_id")
+  groupId        BigInt         @map("group_id")
+  title          String         @db.VarChar(255)
+  description    String?        @db.Text
+  /// File URL or Telegram file_id
+  fileUrl        String?        @map("file_url") @db.VarChar(500)
+  telegramFileId String?        @map("telegram_file_id") @db.VarChar(255)
+  status         MaterialStatus @default(PENDING)
+  /// When to auto-publish (null = publish immediately)
+  publishAt      DateTime?      @map("publish_at") @db.Timestamptz
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  lesson Lesson? @relation(fields: [lessonId], references: [id])
+  group  Group   @relation(fields: [groupId], references: [id])
+
+  @@index([lessonId])
+  @@index([groupId])
+  @@index([status, publishAt])
+  @@map("materials")
+}
+
+// ─── Stage 4: Assignments & Submissions ──────────────────────────────────────
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum SubmissionStatus {
+  PENDING
+  GRADED
+  RETURNED
+}
+
+/// An assignment/test in a group.
+model Assignment {
+  id          BigInt           @id @default(autoincrement())
+  groupId     BigInt           @map("group_id")
+  title       String           @db.VarChar(255)
+  description String?          @db.Text
+  status      AssignmentStatus @default(DRAFT)
+
+  /// When it becomes visible
+  publishAt  DateTime? @map("publish_at") @db.Timestamptz
+  /// The deadline for submission
+  deadlineAt DateTime? @map("deadline_at") @db.Timestamptz
+  /// File URL (e.g. S3 or Telegram file ID) for instructions
+  fileUrl    String?   @map("file_url") @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  /// Optional link to a specific lesson (for homework)
+  lessonId BigInt? @map("lesson_id")
+
+  // Relations
+  group       Group                  @relation(fields: [groupId], references: [id])
+  lesson      Lesson?                @relation(fields: [lessonId], references: [id])
+  submissions AssignmentSubmission[]
+
+  @@index([groupId])
+  @@index([status])
+  @@index([deadlineAt])
+  @@map("assignments")
+}
+
+/// A student's submission for an assignment.
+model AssignmentSubmission {
+  id           BigInt @id @default(autoincrement())
+  assignmentId BigInt @map("assignment_id")
+  enrollmentId BigInt @map("enrollment_id") // Links to student in the group
+
+  fileUrl String? @map("file_url") @db.VarChar(500)
+  content String? @db.Text
+
+  status   SubmissionStatus @default(PENDING)
+  grade    Int?
+  feedback String?          @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
+
+  @@unique([assignmentId, enrollmentId]) // One submission per student per assignment
+  @@index([assignmentId])
+  @@index([enrollmentId])
+  @@index([status])
+  @@map("assignment_submissions")
+}
+
+// ─── Stage 7: Gamification & Rating ──────────────────────────────────────────
+
+model GamificationConfig {
+  id                BigInt   @id @default(autoincrement())
+  courseId          BigInt   @unique @map("course_id")
+  attendanceReward  Int      @default(10) @map("attendance_reward")
+  homeworkReward    Int      @default(20) @map("homework_reward")
+  perfectTestReward Int      @default(50) @map("perfect_test_reward")
+  latePenalty       Int      @default(5) @map("late_penalty")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@map("gamification_configs")
+}
+
+model StudentStats {
+  id            BigInt   @id @default(autoincrement())
+  enrollmentId  BigInt   @unique @map("enrollment_id")
+  coins         Int      @default(0)
+  currentStreak Int      @default(0) @map("current_streak")
+  highestStreak Int      @default(0) @map("highest_streak")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  enrollment   Enrollment        @relation(fields: [enrollmentId], references: [id])
+  transactions CoinTransaction[]
+
+  @@map("student_stats")
+}
+
+enum TransactionType {
+  EARNED
+  SPENT
+  PENALTY
+}
+
+model CoinTransaction {
+  id        BigInt          @id @default(autoincrement())
+  statsId   BigInt          @map("stats_id")
+  amount    Int
+  type      TransactionType
+  reason    String          @db.VarChar(255)
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  stats StudentStats @relation(fields: [statsId], references: [id])
+
+  @@index([statsId])
+  @@index([type])
+  @@map("coin_transactions")
+}
+
+enum ShopItemStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model CoinShopItem {
+  id          BigInt         @id @default(autoincrement())
+  title       String         @db.VarChar(255)
+  description String?        @db.Text
+  cost        Int
+  stock       Int? // null means unlimited
+  status      ShopItemStatus @default(ACTIVE)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  purchases CoinShopPurchase[]
+
+  @@map("coin_shop_items")
+}
+
+enum PurchaseStatus {
+  PENDING
+  FULFILLED
+  CANCELLED
+}
+
+model CoinShopPurchase {
+  id           BigInt         @id @default(autoincrement())
+  itemId       BigInt         @map("item_id")
+  enrollmentId BigInt         @map("enrollment_id")
+  cost         Int // cost at the time of purchase
+  status       PurchaseStatus @default(PENDING)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  item       CoinShopItem @relation(fields: [itemId], references: [id])
+  enrollment Enrollment   @relation(fields: [enrollmentId], references: [id])
+
+  @@index([itemId])
+  @@index([enrollmentId])
+  @@map("coin_shop_purchases")
+}
+
+// ─── Stage 8: Audit and Notifications ──────────────────────────────────────────
+
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  adminId    BigInt   @map("admin_id")
+  action     String   @db.VarChar(255)
+  entityId   BigInt?  @map("entity_id")
+  entityType String?  @map("entity_type") @db.VarChar(100)
+  details    Json?    @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  title     String   @db.VarChar(255)
+  message   String   @db.Text
+  type      String   @db.VarChar(100)
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+// ─── Stage 9: Variants (Cert tests and Homework) ──────────────────────────────
+
+enum TaskType {
+  MULTIPLE_CHOICE // Type 1 (A-D / A-F)
+  SPECIFIC_ANSWER // Type 2 (Text/Math input)
+  WRITTEN_WORK // Type 3 (Free text + photo)
+}
+
+enum VariantType {
+  CERTIFICATION // Used by cert-bot
+  HOMEWORK // Used by homework-bot
+}
+
+model Variant {
+  id          BigInt      @id @default(autoincrement())
+  title       String      @db.VarChar(255)
+  description String?     @db.Text
+  type        VariantType @default(CERTIFICATION)
+  fileUrl     String?     @map("file_url") @db.VarChar(500)
+  startsAt    DateTime?   @map("starts_at") @db.Timestamptz
+  deadlineAt  DateTime?   @map("deadline_at") @db.Timestamptz
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  courseId BigInt? @map("course_id")
+  groupId  BigInt? @map("group_id")
+
+  tasks       VariantTask[]
+  submissions VariantSubmission[]
+
+  course Course? @relation(fields: [courseId], references: [id])
+  group  Group?  @relation(fields: [groupId], references: [id])
+
+  @@index([courseId])
+  @@index([groupId])
+  @@map("variants")
+}
+
+model VariantTask {
+  id            BigInt   @id @default(autoincrement())
+  variantId     BigInt   @map("variant_id")
+  type          TaskType
+  orderIndex    Int      @map("order_index")
+  requiresAdmin Boolean  @default(false) @map("requires_admin")
+  requiresAttachment Boolean @default(false) @map("requires_attachment")
+  optionsCount  Int?     @map("options_count") // 4 or 6 for Type 1
+  correctAnswer String?  @map("correct_answer")
+
+  variant Variant             @relation(fields: [variantId], references: [id])
+  answers VariantTaskAnswer[]
+
+  @@index([variantId])
+  @@map("variant_tasks")
+}
+
+model VariantSubmission {
+  id         BigInt           @id @default(autoincrement())
+  variantId  BigInt           @map("variant_id")
+  userId     BigInt           @map("user_id")
+  totalScore Int?             @map("total_score")
+  status     SubmissionStatus @default(PENDING)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  variant Variant             @relation(fields: [variantId], references: [id])
+  user    User                @relation(fields: [userId], references: [id])
+  answers VariantTaskAnswer[]
+
+  @@unique([variantId, userId])
+  @@index([userId])
+  @@map("variant_submissions")
+}
+
+model VariantTaskAnswer {
+  id           BigInt  @id @default(autoincrement())
+  submissionId BigInt  @map("submission_id")
+  taskId       BigInt  @map("task_id")
+  answer       String? @db.Text
+  fileUrl      String? @map("file_url") @db.VarChar(500)
+  score        Int?
+  feedback     String? @db.Text
+
+  submission VariantSubmission @relation(fields: [submissionId], references: [id])
+  task       VariantTask       @relation(fields: [taskId], references: [id])
+
+  @@unique([submissionId, taskId])
+  @@map("variant_task_answers")
+}

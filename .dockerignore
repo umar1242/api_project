@@ -1,0 +1,17 @@
+node_modules
+.git
+dist
+coverage
+*.log
+.env
+.env.*
+!.env.example
+.next
+.cache
+docker-compose*.yml
+Dockerfile*
+README.md
+tests/
+**/__tests__
+**/*.spec.ts
+**/*.test.ts

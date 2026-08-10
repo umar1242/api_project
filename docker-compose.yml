@@ -1,0 +1,248 @@
+services:
+  api:
+    build:
+      context: ./apps/api
+      target: dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: npm run start:dev
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  admin-bot:
+    build:
+      context: ./apps/admin-bot
+      target: dev
+    volumes:
+      - ./apps/admin-bot:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://api:3000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend-net
+
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-botnet_dev}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - backend-net
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - backend-net
+
+  registrar-bot:
+    build:
+      context: ./apps/registrar-bot
+      target: dev
+    volumes:
+      - ./apps/registrar-bot:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://api:3000
+      - MINI_APP_URL=http://localhost:5173
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend-net
+
+  registrar-mini-app:
+    build:
+      context: ./apps/registrar-mini-app
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/registrar-mini-app:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    networks:
+      - backend-net
+
+  # ── Stage 3: Main Bot & Student Dashboard ─────────────────────────────────
+  main-bot:
+    build:
+      context: ./apps/main-bot
+      target: dev
+    volumes:
+      - ./apps/main-bot:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://api:3000
+      - MAIN_MINI_APP_URL=http://localhost:5174
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend-net
+
+  main-mini-app:
+    build:
+      context: ./apps/main-mini-app
+      target: dev
+    ports:
+      - "5174:5174"
+    volumes:
+      - ./apps/main-mini-app:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://api:3000
+    networks:
+      - backend-net
+
+  homework-bot:
+    build:
+      context: ./apps/homework-bot
+      target: dev
+    volumes:
+      - ./apps/homework-bot:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://api:3000
+      - MINI_APP_URL=http://localhost:5175
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend-net
+
+  homework-mini-app:
+    build:
+      context: ./apps/homework-mini-app
+      target: dev
+    ports:
+      - "5175:5175"
+    volumes:
+      - ./apps/homework-mini-app:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://api:3000
+    networks:
+      - backend-net
+
+  material-bot:
+    build:
+      context: ./apps/material-bot
+      target: dev
+    volumes:
+      - ./apps/material-bot:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://api:3000
+      - MINI_APP_URL=http://localhost:5176
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend-net
+
+  material-mini-app:
+    build:
+      context: ./apps/material-mini-app
+      target: dev
+    ports:
+      - "5176:5176"
+    volumes:
+      - ./apps/material-mini-app:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://api:3000
+    networks:
+      - backend-net
+
+  cert-bot:
+    build:
+      context: ./apps/cert-bot
+      target: dev
+    volumes:
+      - ./apps/cert-bot:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://api:3000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend-net
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  backend-net:
