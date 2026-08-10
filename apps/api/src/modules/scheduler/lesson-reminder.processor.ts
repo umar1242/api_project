@@ -1,10 +1,10 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
-import { Logger } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Job } from "bullmq";
+import { Logger } from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { NotificationsService } from "../notifications/notifications.service";
 
-@Processor('lesson-reminders')
+@Processor("lesson-reminders")
 export class LessonReminderProcessor extends WorkerHost {
   private readonly logger = new Logger(LessonReminderProcessor.name);
 
@@ -30,18 +30,20 @@ export class LessonReminderProcessor extends WorkerHost {
     }
 
     // Here we use the unified NotificationsService
-    this.logger.log(`Sending reminder to group ${lesson.groupId} for lesson ${lesson.title}`);
-    
+    this.logger.log(
+      `Sending reminder to group ${lesson.groupId} for lesson ${lesson.title}`,
+    );
+
     const enrollments = await this.db.enrollment.findMany({
-      where: { groupId: lesson.groupId, status: 'ACTIVE' },
+      where: { groupId: lesson.groupId, status: "ACTIVE" },
     });
 
     for (const enrollment of enrollments) {
       await this.notificationsService.sendNotification(
         enrollment.userId,
-        'Upcoming Lesson',
+        "Upcoming Lesson",
         `Lesson ${lesson.title} starts soon!`,
-        'LESSON_REMINDER',
+        "LESSON_REMINDER",
       );
     }
 

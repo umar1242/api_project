@@ -1,10 +1,10 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
-import { Logger } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Job } from "bullmq";
+import { Logger } from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { NotificationsService } from "../notifications/notifications.service";
 
-@Processor('material-publish')
+@Processor("material-publish")
 export class MaterialPublishProcessor extends WorkerHost {
   private readonly logger = new Logger(MaterialPublishProcessor.name);
 
@@ -31,21 +31,23 @@ export class MaterialPublishProcessor extends WorkerHost {
     // Update material status to PUBLISHED
     await this.db.material.update({
       where: { id: BigInt(materialId) },
-      data: { status: 'PUBLISHED' },
+      data: { status: "PUBLISHED" },
     });
 
-    this.logger.log(`Material ${material.title} published for group ${material.groupId}`);
-    
+    this.logger.log(
+      `Material ${material.title} published for group ${material.groupId}`,
+    );
+
     const enrollments = await this.db.enrollment.findMany({
-      where: { groupId: material.groupId, status: 'ACTIVE' },
+      where: { groupId: material.groupId, status: "ACTIVE" },
     });
 
     for (const enrollment of enrollments) {
       await this.notificationsService.sendNotification(
         enrollment.userId,
-        'New Material',
+        "New Material",
         `Material ${material.title} is now available!`,
-        'MATERIAL_PUBLISHED',
+        "MATERIAL_PUBLISHED",
       );
     }
 

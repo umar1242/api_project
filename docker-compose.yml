@@ -12,6 +12,9 @@ services:
       - .env
     environment:
       - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-botnet_dev}?schema=public
+      - REDIS_HOST=redis
     depends_on:
       db:
         condition: service_healthy

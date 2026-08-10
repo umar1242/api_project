@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
 
 @Injectable()
 export class NotificationsService {
@@ -7,7 +7,12 @@ export class NotificationsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async sendNotification(userId: bigint, title: string, message: string, type: string) {
+  async sendNotification(
+    userId: bigint,
+    title: string,
+    message: string,
+    type: string,
+  ) {
     try {
       const notification = await this.prisma.notification.create({
         data: {
@@ -20,10 +25,16 @@ export class NotificationsService {
       this.logger.log(`Notification sent to user ${userId}: ${title}`);
       return notification;
     } catch (error) {
-      this.logger.error(`Failed to send notification: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to send notification: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
+
+  // TODO: Implement Aggregated Notifications (out of scope for current stage according to project_plan.md Stage 8).
+  // Once implemented, multiple notifications for a single user in a day should be batched into a daily digest.
 
   async getUnread(userId: bigint) {
     return this.prisma.notification.findMany({
@@ -32,7 +43,7 @@ export class NotificationsService {
         isRead: false,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   }

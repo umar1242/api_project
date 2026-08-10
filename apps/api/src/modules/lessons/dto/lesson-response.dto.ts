@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { LessonType, LessonStatus } from '../../../common/enums/lesson.enums';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { LessonType, LessonStatus } from "../../../common/enums/lesson.enums";
 
 export class LessonResponseDto {
   @ApiProperty() id: string;

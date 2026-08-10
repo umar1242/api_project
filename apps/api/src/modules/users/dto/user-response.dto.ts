@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose, Transform } from 'class-transformer';
-import { UserRole, UserStatus } from '../../../common/enums/user.enums';
+import { ApiProperty } from "@nestjs/swagger";
+import { Exclude, Expose, Transform } from "class-transformer";
+import { UserRole, UserStatus } from "../../../common/enums/user.enums";
 
 /**
  * Public API response shape for a User.
@@ -10,21 +10,21 @@ import { UserRole, UserStatus } from '../../../common/enums/user.enums';
 @Exclude()
 export class UserResponseDto {
   @Expose()
-  @ApiProperty({ type: String, example: '123456789' })
+  @ApiProperty({ type: String, example: "123456789" })
   @Transform(({ value }) => (value != null ? value.toString() : null))
   id: bigint;
 
   @Expose()
-  @ApiProperty({ type: String, example: '987654321' })
+  @ApiProperty({ type: String, example: "987654321" })
   @Transform(({ value }) => (value != null ? value.toString() : null))
   telegramId: bigint;
 
   @Expose()
-  @ApiProperty({ example: 'Иванов Иван Иванович' })
+  @ApiProperty({ example: "Иванов Иван Иванович" })
   fullName: string;
 
   @Expose()
-  @ApiProperty({ example: '+79991234567', nullable: true })
+  @ApiProperty({ example: "+79991234567", nullable: true })
   phone: string | null;
 
   @Expose()

@@ -6,13 +6,13 @@
  * These values MUST stay in sync with schema.prisma.
  */
 export enum UserRole {
-  STUDENT = 'STUDENT',
-  CURATOR = 'CURATOR',
-  ADMIN = 'ADMIN',
+  STUDENT = "STUDENT",
+  CURATOR = "CURATOR",
+  ADMIN = "ADMIN",
 }
 
 export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  PAUSED = 'PAUSED',
-  BANNED = 'BANNED',
+  ACTIVE = "ACTIVE",
+  PAUSED = "PAUSED",
+  BANNED = "BANNED",
 }

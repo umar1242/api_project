@@ -1,4 +1,4 @@
-import { IsString, IsObject, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsObject, IsNotEmpty, IsOptional } from "class-validator";
 
 export class SubmitVariantDto {
   @IsString()

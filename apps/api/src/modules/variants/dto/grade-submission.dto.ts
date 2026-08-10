@@ -1,4 +1,4 @@
-import { IsObject, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsObject, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class GradeSubmissionDto {
   // mapping taskId to score

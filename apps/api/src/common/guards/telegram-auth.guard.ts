@@ -4,10 +4,10 @@ import {
   Injectable,
   UnauthorizedException,
   Logger,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Request } from 'express';
-import { createHmac } from 'crypto';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Request } from "express";
+import { createHmac } from "crypto";
 
 /**
  * Validates Telegram Mini App initData.
@@ -52,11 +52,11 @@ export class TelegramAuthGuard implements CanActivate {
 
     // Accept initData from either header or body field
     const initDataRaw =
-      (request.headers['tg-init-data'] as string) ||
+      (request.headers["tg-init-data"] as string) ||
       (request.body as Record<string, string>)?.initData;
 
     if (!initDataRaw) {
-      throw new UnauthorizedException('Missing Telegram initData');
+      throw new UnauthorizedException("Missing Telegram initData");
     }
 
     const tokens = [
@@ -66,12 +66,12 @@ export class TelegramAuthGuard implements CanActivate {
       process.env.MAIN_BOT_TOKEN,
       process.env.HOMEWORK_BOT_TOKEN,
       process.env.MATERIAL_BOT_TOKEN,
-      this.config.get<string>('telegram.botToken')
-    ].filter(t => t && t !== 'your_telegram_bot_token_here');
+      this.config.get<string>("telegram.botToken"),
+    ].filter((t) => t && t !== "your_telegram_bot_token_here");
 
     if (tokens.length === 0) {
-      this.logger.error('No TELEGRAM_BOT_TOKENs configured');
-      throw new UnauthorizedException('Auth configuration error');
+      this.logger.error("No TELEGRAM_BOT_TOKENs configured");
+      throw new UnauthorizedException("Auth configuration error");
     }
 
     let validUser = null;
@@ -87,11 +87,12 @@ export class TelegramAuthGuard implements CanActivate {
     }
 
     if (!isValid || !validUser) {
-      throw new UnauthorizedException('Invalid Telegram initData signature');
+      throw new UnauthorizedException("Invalid Telegram initData signature");
     }
 
     // Attach parsed user to the request for downstream use
-    (request as Request & { telegramUser?: TelegramUser }).telegramUser = validUser;
+    (request as Request & { telegramUser?: TelegramUser }).telegramUser =
+      validUser;
     return true;
   }
 
@@ -101,11 +102,11 @@ export class TelegramAuthGuard implements CanActivate {
   ): { valid: boolean; user: TelegramUser } {
     try {
       const params = new URLSearchParams(initDataRaw);
-      const receivedHash = params.get('hash');
+      const receivedHash = params.get("hash");
       if (!receivedHash) return { valid: false, user: null as never };
 
       // Check freshness
-      const authDate = Number(params.get('auth_date') ?? 0);
+      const authDate = Number(params.get("auth_date") ?? 0);
       const nowSeconds = Math.floor(Date.now() / 1000);
       if (nowSeconds - authDate > this.MAX_AGE_SECONDS) {
         this.logger.warn(
@@ -115,25 +116,25 @@ export class TelegramAuthGuard implements CanActivate {
       }
 
       // Remove hash before building the check string
-      params.delete('hash');
+      params.delete("hash");
 
       // Sort params and build the data check string
       const dataCheckString = [...params.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([k, v]) => `${k}=${v}`)
-        .join('\n');
+        .join("\n");
 
       // Step 1: secret_key = HMAC-SHA256("WebAppData", botToken)
-      const secretKey = createHmac('sha256', 'WebAppData')
+      const secretKey = createHmac("sha256", "WebAppData")
         .update(botToken)
         .digest();
 
       // Step 2: computed_hash = HMAC-SHA256(data_check_string, secret_key)
-      const computedHashBuffer = createHmac('sha256', secretKey)
+      const computedHashBuffer = createHmac("sha256", secretKey)
         .update(dataCheckString)
         .digest();
 
-      const receivedHashBuffer = Buffer.from(receivedHash, 'hex');
+      const receivedHashBuffer = Buffer.from(receivedHash, "hex");
 
       // Constant-time comparison (prevents timing attacks)
       if (computedHashBuffer.length !== receivedHashBuffer.length) {
@@ -142,14 +143,14 @@ export class TelegramAuthGuard implements CanActivate {
       const isValid = computedHashBuffer.equals(receivedHashBuffer);
 
       // Parse user object from initData
-      const userRaw = params.get('user');
+      const userRaw = params.get("user");
       const user: TelegramUser = userRaw
         ? (JSON.parse(userRaw) as TelegramUser)
         : ({ id: 0 } as TelegramUser);
 
       return { valid: isValid, user };
     } catch (err) {
-      this.logger.error('Error validating initData', err);
+      this.logger.error("Error validating initData", err);
       return { valid: false, user: null as never };
     }
   }

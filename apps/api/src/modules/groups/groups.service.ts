@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateGroupDto } from './dto/create-group.dto';
-import { GroupResponseDto } from './dto/group-response.dto';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateGroupDto } from "./dto/create-group.dto";
+import { GroupResponseDto } from "./dto/group-response.dto";
 
 @Injectable()
 export class GroupsService {
@@ -14,7 +18,9 @@ export class GroupsService {
     });
 
     if (existingGroup) {
-      throw new ConflictException(`Group with telegramChatId ${createGroupDto.telegramChatId} already exists`);
+      throw new ConflictException(
+        `Group with telegramChatId ${createGroupDto.telegramChatId} already exists`,
+      );
     }
 
     let courseId = null;
@@ -25,9 +31,11 @@ export class GroupsService {
       const course = await this.prisma.course.findUnique({
         where: { id: courseId },
       });
-      
+
       if (!course) {
-          throw new NotFoundException(`Course with id ${createGroupDto.courseId} not found`);
+        throw new NotFoundException(
+          `Course with id ${createGroupDto.courseId} not found`,
+        );
       }
     }
 
@@ -51,10 +59,10 @@ export class GroupsService {
 
   async findAllByCourseId(courseIdStr: string): Promise<GroupResponseDto[]> {
     const courseId = BigInt(courseIdStr);
-    
+
     const groups = await this.prisma.group.findMany({
       where: { courseId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: { course: true },
     });
 
@@ -66,14 +74,16 @@ export class GroupsService {
           id: group.id.toString(),
           courseId: group.courseId?.toString(),
           telegramChatId: group.telegramChatId.toString(),
-          course: group.course ? { id: group.course.id.toString(), title: group.course.title } : undefined,
+          course: group.course
+            ? { id: group.course.id.toString(), title: group.course.title }
+            : undefined,
         }),
     );
   }
 
   async findAll(): Promise<GroupResponseDto[]> {
     const groups = await this.prisma.group.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: { course: true },
     });
 
@@ -85,12 +95,17 @@ export class GroupsService {
           id: group.id.toString(),
           courseId: group.courseId?.toString(),
           telegramChatId: group.telegramChatId.toString(),
-          course: group.course ? { id: group.course.id.toString(), title: group.course.title } : undefined,
+          course: group.course
+            ? { id: group.course.id.toString(), title: group.course.title }
+            : undefined,
         }),
     );
   }
 
-  async linkCourse(groupIdStr: string, courseIdStr: string): Promise<GroupResponseDto> {
+  async linkCourse(
+    groupIdStr: string,
+    courseIdStr: string,
+  ): Promise<GroupResponseDto> {
     const id = BigInt(groupIdStr);
     const courseId = BigInt(courseIdStr);
 
@@ -106,7 +121,9 @@ export class GroupsService {
       id: group.id.toString(),
       courseId: group.courseId?.toString(),
       telegramChatId: group.telegramChatId.toString(),
-      course: group.course ? { id: group.course.id.toString(), title: group.course.title } : undefined,
+      course: group.course
+        ? { id: group.course.id.toString(), title: group.course.title }
+        : undefined,
     });
   }
 
@@ -117,7 +134,9 @@ export class GroupsService {
     });
 
     if (!group) {
-      throw new NotFoundException(`Group with telegramChatId ${chatIdStr} not found`);
+      throw new NotFoundException(
+        `Group with telegramChatId ${chatIdStr} not found`,
+      );
     }
 
     return new GroupResponseDto({

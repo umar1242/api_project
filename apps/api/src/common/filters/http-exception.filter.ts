@@ -5,8 +5,8 @@ import {
   HttpException,
   HttpStatus,
   Logger,
-} from '@nestjs/common';
-import { Request, Response } from 'express';
+} from "@nestjs/common";
+import { Request, Response } from "express";
 
 /**
  * Global exception filter.
@@ -32,7 +32,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       errorBody = exception.getResponse();
     } else {
       statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-      errorBody = 'Internal server error';
+      errorBody = "Internal server error";
       // Log unexpected errors with full stack
       this.logger.error(
         `Unhandled exception on ${request.method} ${request.url}`,

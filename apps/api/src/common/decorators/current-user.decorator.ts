@@ -1,6 +1,6 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Request } from 'express';
-import { TelegramUser } from '../guards/telegram-auth.guard';
+import { createParamDecorator, ExecutionContext } from "@nestjs/common";
+import { Request } from "express";
+import { TelegramUser } from "../guards/telegram-auth.guard";
 
 /**
  * Extracts the parsed Telegram user from the request.
@@ -13,9 +13,9 @@ import { TelegramUser } from '../guards/telegram-auth.guard';
  */
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): TelegramUser => {
-    const request = ctx.switchToHttp().getRequest<
-      Request & { telegramUser?: TelegramUser }
-    >();
+    const request = ctx
+      .switchToHttp()
+      .getRequest<Request & { telegramUser?: TelegramUser }>();
     return request.telegramUser as TelegramUser;
   },
 );

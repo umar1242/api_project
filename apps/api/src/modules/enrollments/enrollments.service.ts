@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
-import { EnrollmentResponseDto } from './dto/enrollment-response.dto';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { ConfigService } from '@nestjs/config';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  Logger,
+} from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateEnrollmentDto } from "./dto/create-enrollment.dto";
+import { EnrollmentResponseDto } from "./dto/enrollment-response.dto";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { EnrollmentStatus } from "@prisma/client";
+import { ConfigService } from "@nestjs/config";
+import { NotificationsService } from "../notifications/notifications.service";
 
 @Injectable()
 export class EnrollmentsService {
@@ -11,7 +18,8 @@ export class EnrollmentsService {
 
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async enroll(
@@ -28,7 +36,9 @@ export class EnrollmentsService {
       },
       update: {
         // Only update if they provided new info
-        ...(createEnrollmentDto.fullName && { fullName: createEnrollmentDto.fullName }),
+        ...(createEnrollmentDto.fullName && {
+          fullName: createEnrollmentDto.fullName,
+        }),
         ...(createEnrollmentDto.phone && { phone: createEnrollmentDto.phone }),
       },
     });
@@ -40,7 +50,9 @@ export class EnrollmentsService {
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with refLink ${createEnrollmentDto.refLink} not found`);
+      throw new NotFoundException(
+        `Course with refLink ${createEnrollmentDto.refLink} not found`,
+      );
     }
 
     if (course.groups.length === 0) {
@@ -63,44 +75,100 @@ export class EnrollmentsService {
       this.logger.log(`User ${user.id} enrolled in group ${group.id}`);
 
       let inviteLink: string | undefined = undefined;
-      
+
       try {
         const registrarToken = process.env.REGISTRAR_BOT_TOKEN;
         if (registrarToken && group.telegramChatId) {
-          const res = await fetch(`https://api.telegram.org/bot${registrarToken}/createChatInviteLink`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: group.telegramChatId.toString(),
-              member_limit: 1, // specific to this user
-            })
-          });
+          const res = await fetch(
+            `https://api.telegram.org/bot${registrarToken}/createChatInviteLink`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: group.telegramChatId.toString(),
+                member_limit: 1, // specific to this user
+              }),
+            },
+          );
           const data = await res.json();
           if (data.ok && data.result?.invite_link) {
             inviteLink = data.result.invite_link;
           } else {
-            this.logger.warn(`Failed to generate invite link: ${JSON.stringify(data)}`);
+            this.logger.warn(
+              `Failed to generate invite link: ${JSON.stringify(data)}`,
+            );
           }
         }
       } catch (e) {
-        this.logger.error('Error creating chat invite link', e);
+        this.logger.error("Error creating chat invite link", e);
       }
 
       return new EnrollmentResponseDto({
         ...enrollment,
         paymentDueAt: enrollment.paymentDueAt || undefined,
         paymentPaidAt: enrollment.paymentPaidAt || undefined,
-        metadata: enrollment.metadata ? (enrollment.metadata as any) : undefined,
+        metadata: enrollment.metadata
+          ? (enrollment.metadata as any)
+          : undefined,
         id: enrollment.id.toString(),
         userId: enrollment.userId.toString(),
         groupId: enrollment.groupId.toString(),
         inviteLink,
       } as any);
     } catch (err) {
-      if (err instanceof PrismaClientKnownRequestError && err.code === 'P2002') {
-        throw new ConflictException('User is already enrolled in this group');
+      if (
+        err instanceof PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        throw new ConflictException("User is already enrolled in this group");
       }
       throw err;
     }
+  }
+
+  async updateStatus(
+    id: string,
+    status: EnrollmentStatus,
+  ): Promise<EnrollmentResponseDto> {
+    const enrollment = await this.prisma.enrollment.update({
+      where: { id: BigInt(id) },
+      data: { status },
+    });
+    return this.mapToDto(enrollment);
+  }
+
+  async confirmPayment(id: string): Promise<EnrollmentResponseDto> {
+    const enrollment = await this.prisma.enrollment.update({
+      where: { id: BigInt(id) },
+      data: { paymentPaidAt: new Date() },
+    });
+
+    await this.notificationsService
+      .sendNotification(
+        enrollment.userId,
+        "Оплата подтверждена",
+        "Оплата подтверждена, добро пожаловать в курс",
+        "PAYMENT_CONFIRMED",
+      )
+      .catch((err) =>
+        this.logger.error(
+          `Failed to send payment confirmation to user ${enrollment.userId}`,
+          err,
+        ),
+      );
+
+    return this.mapToDto(enrollment);
+  }
+
+  private mapToDto(enrollment: any): EnrollmentResponseDto {
+    return new EnrollmentResponseDto({
+      ...enrollment,
+      paymentDueAt: enrollment.paymentDueAt || undefined,
+      paymentPaidAt: enrollment.paymentPaidAt || undefined,
+      metadata: enrollment.metadata ? (enrollment.metadata as any) : undefined,
+      id: enrollment.id.toString(),
+      userId: enrollment.userId.toString(),
+      groupId: enrollment.groupId.toString(),
+    } as any);
   }
 }

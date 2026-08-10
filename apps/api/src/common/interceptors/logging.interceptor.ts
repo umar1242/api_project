@@ -4,11 +4,11 @@ import {
   ExecutionContext,
   CallHandler,
   Logger,
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+} from "@nestjs/common";
+import { Observable } from "rxjs";
+import { tap } from "rxjs/operators";
+import { Request, Response } from "express";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Logs every incoming request and its response time.
@@ -17,15 +17,15 @@ import { v4 as uuidv4 } from 'uuid';
  */
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  private readonly logger = new Logger('HTTP');
+  private readonly logger = new Logger("HTTP");
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<Request>();
     const res = context.switchToHttp().getResponse<Response>();
 
     // Attach correlation ID
-    const requestId = (req.headers['x-request-id'] as string) ?? uuidv4();
-    res.setHeader('X-Request-Id', requestId);
+    const requestId = (req.headers["x-request-id"] as string) ?? uuidv4();
+    res.setHeader("X-Request-Id", requestId);
 
     const { method, url } = req;
     const start = Date.now();
@@ -40,9 +40,7 @@ export class LoggingInterceptor implements NestInterceptor {
         },
         error: () => {
           const ms = Date.now() - start;
-          this.logger.warn(
-            `[${requestId}] ${method} ${url} ERROR +${ms}ms`,
-          );
+          this.logger.warn(`[${requestId}] ${method} ${url} ERROR +${ms}ms`);
         },
       }),
     );

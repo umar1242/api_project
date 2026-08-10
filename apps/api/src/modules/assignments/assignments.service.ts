@@ -1,15 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { GamificationService } from '../gamification/gamification.service';
-import { CreateAssignmentDto } from './dto/create-assignment.dto';
-import { SubmitAssignmentDto } from './dto/submit-assignment.dto';
-import { GradeSubmissionDto } from './dto/grade-submission.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { GamificationService } from "../gamification/gamification.service";
+import { CreateAssignmentDto } from "./dto/create-assignment.dto";
+import { SubmitAssignmentDto } from "./dto/submit-assignment.dto";
+import { GradeSubmissionDto } from "./dto/grade-submission.dto";
+import { NotificationsService } from "../notifications/notifications.service";
+import { Assignment, AssignmentSubmission } from "@prisma/client";
 
 @Injectable()
 export class AssignmentsService {
   constructor(
     private readonly db: PrismaService,
     private readonly gamificationService: GamificationService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(data: CreateAssignmentDto) {
@@ -30,7 +33,7 @@ export class AssignmentsService {
     const assignments = await this.db.assignment.findMany({
       where: { groupId: BigInt(groupId) },
     });
-    return assignments.map(a => ({
+    return assignments.map((a: Assignment) => ({
       ...a,
       id: a.id.toString(),
       groupId: a.groupId.toString(),
@@ -53,7 +56,7 @@ export class AssignmentsService {
     const submissions = await this.db.assignmentSubmission.findMany({
       where: { assignmentId: BigInt(assignmentId) },
     });
-    return submissions.map(s => ({
+    return submissions.map((s: AssignmentSubmission) => ({
       ...s,
       id: s.id.toString(),
       assignmentId: s.assignmentId.toString(),
@@ -71,30 +74,49 @@ export class AssignmentsService {
       },
     });
     if (!submission) {
-      throw new NotFoundException('Submission not found');
+      throw new NotFoundException("Submission not found");
     }
-    
+
     const updated = await this.db.assignmentSubmission.update({
       where: { id: BigInt(submissionId) },
       data: {
         grade: data.grade,
         feedback: data.feedback || undefined,
-        status: 'GRADED',
+        status: "GRADED",
       },
     });
 
-    if (data.grade && data.grade >= 80 && submission.enrollment.group.courseId) {
+    if (
+      data.grade &&
+      data.grade >= 80 &&
+      submission.enrollment.group.courseId
+    ) {
       try {
         await this.gamificationService.addCoins(
           submission.enrollment.userId.toString(),
           submission.enrollment.group.courseId.toString(),
           20, // default reward
-          `Assignment graded with score: ${data.grade}`
+          `Assignment graded with score: ${data.grade}`,
         );
       } catch (err: any) {
-        console.error('Failed to award coins:', err.message);
+        console.error("Failed to award coins:", err.message);
       }
     }
+
+    // Notify student about manual grading
+    await this.notificationsService
+      .sendNotification(
+        submission.enrollment.userId,
+        "Работа проверена",
+        `Ваша работа проверена, балл: ${data.grade}`,
+        "SUBMISSION_GRADED",
+      )
+      .catch((err) =>
+        console.error(
+          `Failed to send grading notification to user ${submission.enrollment.userId}:`,
+          err,
+        ),
+      );
 
     return updated;
   }

@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateCourseDto } from './dto/create-course.dto';
-import { CourseResponseDto } from './dto/course-response.dto';
-import { nanoid } from 'nanoid';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateCourseDto } from "./dto/create-course.dto";
+import { CourseResponseDto } from "./dto/course-response.dto";
+import { nanoid } from "nanoid";
 
 @Injectable()
 export class CoursesService {
@@ -28,7 +28,7 @@ export class CoursesService {
 
   async findAll(): Promise<CourseResponseDto[]> {
     const courses = await this.prisma.course.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return courses.map(

@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateMaterialDto } from './dto/create-material.dto';
-import { UpdateMaterialDto } from './dto/update-material.dto';
-import { MaterialResponseDto } from './dto/material-response.dto';
-import { MaterialStatus, EnrollmentStatus } from '@prisma/client';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateMaterialDto } from "./dto/create-material.dto";
+import { UpdateMaterialDto } from "./dto/update-material.dto";
+import { MaterialResponseDto } from "./dto/material-response.dto";
+import { MaterialStatus, EnrollmentStatus, Prisma } from "@prisma/client";
 
 @Injectable()
 export class MaterialsService {
@@ -43,17 +47,23 @@ export class MaterialsService {
     return dto;
   }
 
-  async create(createMaterialDto: CreateMaterialDto): Promise<MaterialResponseDto> {
+  async create(
+    createMaterialDto: CreateMaterialDto,
+  ): Promise<MaterialResponseDto> {
     const material = await this.prisma.material.create({
       data: {
         groupId: BigInt(createMaterialDto.groupId),
-        lessonId: createMaterialDto.lessonId ? BigInt(createMaterialDto.lessonId) : null,
+        lessonId: createMaterialDto.lessonId
+          ? BigInt(createMaterialDto.lessonId)
+          : null,
         title: createMaterialDto.title,
         description: createMaterialDto.description,
         fileUrl: createMaterialDto.fileUrl,
         telegramFileId: createMaterialDto.telegramFileId,
         status: createMaterialDto.status || MaterialStatus.PENDING,
-        publishAt: createMaterialDto.publishAt ? new Date(createMaterialDto.publishAt) : null,
+        publishAt: createMaterialDto.publishAt
+          ? new Date(createMaterialDto.publishAt)
+          : null,
       },
       include: { lesson: true },
     });
@@ -73,7 +83,10 @@ export class MaterialsService {
     }
   }
 
-  async findAllByGroupForStudent(groupId: bigint, telegramId: bigint): Promise<MaterialResponseDto[]> {
+  async findAllByGroupForStudent(
+    groupId: bigint,
+    telegramId: bigint,
+  ): Promise<MaterialResponseDto[]> {
     // 1. Verify user has an active enrollment (status=ACTIVE or COMPLETED)
     const enrollment = await this.prisma.enrollment.findFirst({
       where: {
@@ -84,7 +97,9 @@ export class MaterialsService {
     });
 
     if (!enrollment) {
-      throw new ForbiddenException('User is not actively enrolled in this group');
+      throw new ForbiddenException(
+        "User is not actively enrolled in this group",
+      );
     }
 
     // 2. Return materials where status === PUBLISHED and (publishAt is null or <= now)
@@ -92,16 +107,16 @@ export class MaterialsService {
       where: {
         groupId,
         status: MaterialStatus.PUBLISHED,
-        OR: [
-          { publishAt: null },
-          { publishAt: { lte: new Date() } },
-        ],
+        OR: [{ publishAt: null }, { publishAt: { lte: new Date() } }],
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: { lesson: true },
     });
 
-    return materials.map(m => this.mapToDto(m));
+    return materials.map(
+      (m: Prisma.MaterialGetPayload<{ include: { lesson: true } }>) =>
+        this.mapToDto(m),
+    );
   }
 
   async findOne(id: bigint): Promise<MaterialResponseDto> {
@@ -113,17 +128,24 @@ export class MaterialsService {
     return this.mapToDto(material);
   }
 
-  async update(id: bigint, updateMaterialDto: UpdateMaterialDto): Promise<MaterialResponseDto> {
+  async update(
+    id: bigint,
+    updateMaterialDto: UpdateMaterialDto,
+  ): Promise<MaterialResponseDto> {
     const data: any = { ...updateMaterialDto };
-    
+
     if (updateMaterialDto.groupId !== undefined) {
       data.groupId = BigInt(updateMaterialDto.groupId);
     }
     if (updateMaterialDto.lessonId !== undefined) {
-      data.lessonId = updateMaterialDto.lessonId ? BigInt(updateMaterialDto.lessonId) : null;
+      data.lessonId = updateMaterialDto.lessonId
+        ? BigInt(updateMaterialDto.lessonId)
+        : null;
     }
     if (updateMaterialDto.publishAt !== undefined) {
-      data.publishAt = updateMaterialDto.publishAt ? new Date(updateMaterialDto.publishAt) : null;
+      data.publishAt = updateMaterialDto.publishAt
+        ? new Date(updateMaterialDto.publishAt)
+        : null;
     }
 
     try {

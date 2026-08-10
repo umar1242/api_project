@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
   IsString,
   IsEnum,
@@ -9,15 +9,15 @@ import {
   Min,
   Max,
   MaxLength,
-} from 'class-validator';
-import { LessonType } from '../../../common/enums/lesson.enums';
+} from "class-validator";
+import { LessonType } from "../../../common/enums/lesson.enums";
 
 export class CreateLessonDto {
-  @ApiProperty({ example: '1' })
+  @ApiProperty({ example: "1" })
   @IsString()
   groupId: string;
 
-  @ApiProperty({ example: 'Introduction to TypeScript' })
+  @ApiProperty({ example: "Introduction to TypeScript" })
   @IsString()
   @MaxLength(255)
   title: string;
@@ -31,7 +31,7 @@ export class CreateLessonDto {
   @IsEnum(LessonType)
   type: LessonType;
 
-  @ApiProperty({ example: '2025-01-15T10:00:00Z' })
+  @ApiProperty({ example: "2025-01-15T10:00:00Z" })
   @IsDateString()
   startsAt: string;
 
@@ -42,7 +42,7 @@ export class CreateLessonDto {
   @Max(480)
   durationMin?: number;
 
-  @ApiPropertyOptional({ example: 'https://zoom.us/j/example' })
+  @ApiPropertyOptional({ example: "https://zoom.us/j/example" })
   @IsOptional()
   @IsUrl()
   @MaxLength(500)

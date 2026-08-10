@@ -3,15 +3,16 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
-} from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UserResponseDto } from './dto/user-response.dto';
+} from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { UserResponseDto } from "./dto/user-response.dto";
+import { User } from "@prisma/client";
 
 // PrismaClientKnownRequestError is imported from the runtime package,
 // not from @prisma/client types — this works before prisma generate.
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 @Injectable()
 export class UsersService {
@@ -45,7 +46,10 @@ export class UsersService {
       this.logger.log(`Created user ${user.id} (tg:${user.telegramId})`);
       return this.toDto(user);
     } catch (err) {
-      if (err instanceof PrismaClientKnownRequestError && err.code === 'P2002') {
+      if (
+        err instanceof PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
         throw new ConflictException(
           `User with telegramId ${dto.telegramId} already exists`,
         );
@@ -69,7 +73,12 @@ export class UsersService {
     const where: any = role ? { role } : {};
 
     const [users, total] = await this.prisma.$transaction([
-      this.prisma.user.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: "desc" },
+      }),
       this.prisma.user.count({ where }),
     ]);
 
@@ -146,11 +155,11 @@ export class UsersService {
    */
   async getLeaderboard() {
     const users = await this.prisma.user.findMany({
-      where: { role: 'STUDENT', status: 'ACTIVE' },
-      orderBy: { xp: 'desc' },
+      where: { role: "STUDENT", status: "ACTIVE" },
+      orderBy: { xp: "desc" },
       take: 10,
     });
-    return users.map(u => ({
+    return users.map((u: User) => ({
       id: u.id.toString(),
       fullName: u.fullName,
       xp: u.xp,

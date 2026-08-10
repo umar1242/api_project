@@ -1,5 +1,5 @@
-import { Global, Module } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
+import { Global, Module } from "@nestjs/common";
+import { PrismaService } from "./prisma.service";
 
 /**
  * DatabaseModule is global — PrismaService is available for injection

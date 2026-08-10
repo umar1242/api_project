@@ -1,7 +1,7 @@
-import * as Joi from 'joi';
-import { Logger } from '@nestjs/common';
+import * as Joi from "joi";
+import { Logger } from "@nestjs/common";
 
-const logger = new Logger('EnvValidation');
+const logger = new Logger("EnvValidation");
 
 /**
  * Validates environment variables at application startup.
@@ -14,8 +14,8 @@ const logger = new Logger('EnvValidation');
  */
 const envSchema = Joi.object({
   NODE_ENV: Joi.string()
-    .valid('development', 'production', 'test')
-    .default('development'),
+    .valid("development", "production", "test")
+    .default("development"),
 
   PORT: Joi.number().default(3000),
 
@@ -23,22 +23,24 @@ const envSchema = Joi.object({
   DATABASE_URL: Joi.string()
     .pattern(/^postgres(ql)?:\/\//)
     .required()
-    .description('Full Prisma connection string (postgresql://user:pass@host:port/db)'),
+    .description(
+      "Full Prisma connection string (postgresql://user:pass@host:port/db)",
+    ),
 
-  REDIS_URL: Joi.string().required().description('Redis connection URL'),
-  REDIS_HOST: Joi.string().default('redis'),
+  REDIS_URL: Joi.string().required().description("Redis connection URL"),
+  REDIS_HOST: Joi.string().default("redis"),
   REDIS_PORT: Joi.number().default(6379),
 
   SERVICE_TOKEN: Joi.string()
     .min(8)
     .required()
-    .description('Shared secret for bot-to-API authentication'),
+    .description("Shared secret for bot-to-API authentication"),
 
   // ── Soft required (optional — warn if missing) ────────────────────────────
   // Needed only for Telegram Mini App initData validation (Stage 2+)
   TELEGRAM_BOT_TOKEN: Joi.string()
     .optional()
-    .description('Used to verify Mini App initData signatures'),
+    .description("Used to verify Mini App initData signatures"),
 }).options({ allowUnknown: true });
 
 export function validateEnv(
@@ -52,14 +54,14 @@ export function validateEnv(
     throw new Error(
       `Environment validation failed:\n${error.details
         .map((d) => `  - ${d.message}`)
-        .join('\n')}`,
+        .join("\n")}`,
     );
   }
 
   // Soft warnings for non-blocking missing vars
-  if (!config['TELEGRAM_BOT_TOKEN']) {
+  if (!config["TELEGRAM_BOT_TOKEN"]) {
     logger.warn(
-      'TELEGRAM_BOT_TOKEN is not set — Telegram Mini App auth will not work (needed from Stage 2)',
+      "TELEGRAM_BOT_TOKEN is not set — Telegram Mini App auth will not work (needed from Stage 2)",
     );
   }
 

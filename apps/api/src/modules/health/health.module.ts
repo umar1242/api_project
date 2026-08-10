@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { HealthController } from './health.controller';
-import { DatabaseModule } from '../../database/database.module';
+import { Module } from "@nestjs/common";
+import { HealthController } from "./health.controller";
+import { DatabaseModule } from "../../database/database.module";
 
 /**
  * HealthModule — exposes GET /health.

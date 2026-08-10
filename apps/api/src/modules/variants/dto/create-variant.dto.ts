@@ -1,6 +1,15 @@
-import { IsString, IsOptional, IsEnum, IsArray, ValidateNested, IsDateString, IsNumber, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
-import { VariantType, TaskType } from '@prisma/client';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsArray,
+  ValidateNested,
+  IsDateString,
+  IsNumber,
+  IsBoolean,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { VariantType, TaskType } from "@prisma/client";
 
 export class CreateVariantTaskDto {
   @IsEnum(TaskType)

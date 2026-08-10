@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
-import { GamificationController } from './gamification.controller';
-import { GamificationService } from './gamification.service';
-import { DatabaseModule } from '../../database/database.module';
+import { Module } from "@nestjs/common";
+import { GamificationController } from "./gamification.controller";
+import { GamificationService } from "./gamification.service";
+import { DatabaseModule } from "../../database/database.module";
+import { AuditLogModule } from "../audit/audit.module";
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuditLogModule],
   controllers: [GamificationController],
   providers: [GamificationService],
   exports: [GamificationService],
