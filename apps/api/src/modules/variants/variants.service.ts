@@ -19,6 +19,25 @@ export class VariantsService {
     private notificationsService: NotificationsService,
   ) {}
 
+  private mapVariantToPublicDto(
+    variant: any,
+  ): import("./dto/variant-response.dto").VariantPublicResponseDto {
+    return {
+      ...variant,
+      id: variant.id.toString(),
+      courseId: variant.courseId?.toString(),
+      groupId: variant.groupId?.toString(),
+      tasks: variant.tasks?.map((task: VariantTask) => {
+        const { correctAnswer, ...taskWithoutAnswer } = task;
+        return {
+          ...taskWithoutAnswer,
+          id: task.id.toString(),
+          variantId: task.variantId.toString(),
+        };
+      }),
+    };
+  }
+
   private mapVariantToDto(
     variant: any,
   ): import("./dto/variant-response.dto").VariantResponseDto {
@@ -97,7 +116,7 @@ export class VariantsService {
       include: { tasks: true },
       orderBy: { createdAt: "desc" },
     });
-    return variants.map((v) => this.mapVariantToDto(v));
+    return variants.map((v: Variant & { tasks: VariantTask[] }) => this.mapVariantToPublicDto(v));
   }
 
   async findOne(id: string) {
@@ -106,7 +125,7 @@ export class VariantsService {
       include: { tasks: true },
     });
     if (!variant) throw new NotFoundException("Variant not found");
-    return this.mapVariantToDto(variant);
+    return this.mapVariantToPublicDto(variant);
   }
 
   async updateTasks(
@@ -140,7 +159,7 @@ export class VariantsService {
     let totalScore = 0;
     let needsAdminCheck = false;
 
-    const answersToCreate = variant.tasks.map((task) => {
+    const answersToCreate = variant.tasks.map((task: VariantTask) => {
       const studentAnswer = data.answers[task.id.toString()];
       const fileUrl = data.fileUrls?.[task.id.toString()];
 
@@ -234,7 +253,7 @@ export class VariantsService {
       },
       orderBy: { createdAt: "asc" },
     });
-    return submissions.map((s) => this.mapSubmissionToDto(s));
+    return submissions.map((s: VariantSubmission & { variant: Variant, user: User }) => this.mapSubmissionToDto(s));
   }
 
   async findSubmission(submissionId: string) {

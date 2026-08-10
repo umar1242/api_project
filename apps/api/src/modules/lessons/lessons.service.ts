@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
+import { Lesson } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
 import { CreateLessonDto } from "./dto/create-lesson.dto";
 import { UpdateLessonDto } from "./dto/update-lesson.dto";
@@ -56,7 +57,7 @@ export class LessonsService {
       }),
       this.prisma.lesson.count({ where: { groupId } }),
     ]);
-    return { data: data.map((l) => this.mapToDto(l)), total };
+    return { data: data.map((l: Lesson) => this.mapToDto(l)), total };
   }
 
   async findUpcoming(groupId: bigint, limit = 5): Promise<LessonResponseDto[]> {
@@ -65,7 +66,7 @@ export class LessonsService {
       take: limit,
       orderBy: { startsAt: "asc" },
     });
-    return data.map((l) => this.mapToDto(l));
+    return data.map((l: Lesson) => this.mapToDto(l));
   }
 
   async findLessonsStartingSoon(lookAheadMs: number) {

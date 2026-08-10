@@ -1,4 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "../../database/prisma.service";
 import { VariantsController } from "./variants.controller";
 import { VariantsService } from "./variants.service";
 import { AuditService } from "../audit/audit.service";
@@ -18,6 +20,14 @@ describe("VariantsController", () => {
           provide: AuditService,
           useValue: { logAction: jest.fn() },
         },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn() },
+        },
+        {
+          provide: PrismaService,
+          useValue: {},
+        }
       ],
     }).compile();
 

@@ -82,7 +82,7 @@ export class UsersService {
       this.prisma.user.count({ where }),
     ]);
 
-    return { data: users.map((u) => this.toDto(u)), total };
+    return { data: users.map((u: User) => this.toDto(u)), total };
   }
 
   /**

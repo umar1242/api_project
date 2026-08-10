@@ -1,13 +1,18 @@
-import { Controller, Get, Post, Body, Param } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
+import { Controller, Get, Post, Body, Param, UseGuards, Req } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiSecurity } from "@nestjs/swagger";
 import { VariantsService } from "./variants.service";
 import { CreateVariantDto } from "./dto/create-variant.dto";
-import { VariantResponseDto } from "./dto/variant-response.dto";
+import { VariantResponseDto, VariantPublicResponseDto } from "./dto/variant-response.dto";
 import { VariantSubmissionResponseDto } from "./dto/variant-submission-response.dto";
 import { AuditService } from "../audit/audit.service";
-import { Req } from "@nestjs/common";
+import { ServiceTokenGuard } from "../../common/guards/service-token.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "@prisma/client";
 
 @ApiTags("Variants")
+@ApiSecurity("service-token")
+@UseGuards(ServiceTokenGuard, RolesGuard)
 @Controller("variants")
 export class VariantsController {
   constructor(
@@ -17,6 +22,7 @@ export class VariantsController {
 
   @ApiOperation({ summary: "Create a new variant" })
   @ApiResponse({ status: 201, type: VariantResponseDto })
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @Post()
   create(
     @Body() createVariantDto: CreateVariantDto,
@@ -25,14 +31,15 @@ export class VariantsController {
   }
 
   @ApiOperation({ summary: "Get all variants" })
-  @ApiResponse({ status: 200, type: [VariantResponseDto] })
+  @ApiResponse({ status: 200, type: [VariantPublicResponseDto] })
   @Get()
-  findAll(): Promise<VariantResponseDto[]> {
+  findAll(): Promise<VariantPublicResponseDto[]> {
     return this.variantsService.findAll();
   }
 
   @ApiOperation({ summary: "Get pending submissions requiring admin review" })
   @ApiResponse({ status: 200, type: [VariantSubmissionResponseDto] })
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @Get("submissions/pending")
   getPendingSubmissions(): Promise<VariantSubmissionResponseDto[]> {
     return this.variantsService.findPendingSubmissions();
@@ -40,6 +47,7 @@ export class VariantsController {
 
   @ApiOperation({ summary: "Get a specific submission" })
   @ApiResponse({ status: 200, type: VariantSubmissionResponseDto })
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @Get("submissions/:submissionId")
   getSubmission(
     @Param("submissionId") submissionId: string,
@@ -49,6 +57,7 @@ export class VariantsController {
 
   @ApiOperation({ summary: "Grade a submission" })
   @ApiResponse({ status: 200, type: VariantSubmissionResponseDto })
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @Post("submissions/:submissionId/grade")
   async gradeSubmission(
     @Req() req: any,
@@ -74,14 +83,15 @@ export class VariantsController {
   }
 
   @ApiOperation({ summary: "Get a variant by ID" })
-  @ApiResponse({ status: 200, type: VariantResponseDto })
+  @ApiResponse({ status: 200, type: VariantPublicResponseDto })
   @Get(":id")
-  findOne(@Param("id") id: string): Promise<VariantResponseDto> {
+  findOne(@Param("id") id: string): Promise<VariantPublicResponseDto> {
     return this.variantsService.findOne(id);
   }
 
   @ApiOperation({ summary: "Update tasks for a variant" })
   @ApiResponse({ status: 200 })
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @Post(":id/tasks")
   updateTasks(
     @Param("id") id: string,
