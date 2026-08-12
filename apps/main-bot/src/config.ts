@@ -18,7 +18,7 @@ export const config = {
   apiBaseUrl: process.env.API_BASE_URL ?? 'http://api:3000',
 
   /** Main Mini App URL (open via WebApp button) */
-  miniAppUrl: process.env.MAIN_MINI_APP_URL ?? 'https://your-mini-app-url.example.com',
+  miniAppUrl: required('MAIN_WEBAPP_URL'),
 
   /** Shared secret for Bot → API authentication */
   serviceToken: required('SERVICE_TOKEN'),

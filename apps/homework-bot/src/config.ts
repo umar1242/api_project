@@ -17,7 +17,7 @@ export const config = {
   apiBaseUrl: process.env.API_BASE_URL ?? 'http://api:3000',
 
   /** Mini App URL for Homework */
-  miniAppUrl: process.env.HOMEWORK_WEBAPP_URL ?? 'http://localhost:5176',
+  miniAppUrl: required('HOMEWORK_WEBAPP_URL'),
 
   /** Shared secret for Bot → API authentication */
   serviceToken: required('SERVICE_TOKEN'),

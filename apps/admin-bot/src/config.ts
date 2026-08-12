@@ -25,5 +25,5 @@ export const config = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
 
   /** URL for the Admin Mini App */
-  webAppUrl: process.env.ADMIN_WEBAPP_URL ?? 'http://localhost:5173',
+  webAppUrl: required('ADMIN_WEBAPP_URL'),
 } as const;

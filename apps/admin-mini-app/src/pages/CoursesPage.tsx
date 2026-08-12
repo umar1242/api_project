@@ -20,6 +20,7 @@ export const CoursesPage: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [step, setStep] = useState(1);
   const [createdRefLink, setCreatedRefLink] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
   
   const [title, setTitle] = useState('');
   const [type, setType] = useState<'FREE' | 'PAID'>('FREE');
@@ -39,8 +40,14 @@ export const CoursesPage: React.FC = () => {
       const allGroups = Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.data || []);
       setCourses(coursesData);
       setUnassignedGroups(allGroups.filter((g: any) => !g.courseId));
-    } catch (err) {
+      
+      // Temporary debug alert
+      if (allGroups.filter((g: any) => !g.courseId).length === 0) {
+          setDebugInfo('Debug groups: ' + JSON.stringify(groupsRes.data));
+      }
+    } catch (err: any) {
       console.error(err);
+      setDebugInfo('Error fetching data: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -233,6 +240,11 @@ export const CoursesPage: React.FC = () => {
                   <option key={g.id} value={g.id}>{g.title}</option>
                 ))}
               </select>
+            )}
+            {debugInfo && (
+              <div className="mt-4 p-3 bg-gray-100 rounded text-xs font-mono break-all text-red-600">
+                {debugInfo}
+              </div>
             )}
           </div>
         </div>

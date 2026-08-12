@@ -16,8 +16,7 @@ export const config = {
   /** Base URL of the unified API */
   apiBaseUrl: process.env.API_BASE_URL ?? 'http://api:3000',
 
-  /** Mini App URL */
-  miniAppUrl: process.env.MINI_APP_URL || '',
+  miniAppUrl: required('MATERIAL_WEBAPP_URL'),
 
   /** Shared secret for Bot → API authentication */
   serviceToken: required('SERVICE_TOKEN'),

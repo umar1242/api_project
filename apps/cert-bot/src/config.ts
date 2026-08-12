@@ -20,5 +20,5 @@ export const config = {
   serviceToken: required('SERVICE_TOKEN'),
 
   nodeEnv: process.env.NODE_ENV ?? 'development',
-  webAppUrl: process.env.CERT_WEBAPP_URL ?? 'http://localhost:5174',
+  webAppUrl: required('CERT_WEBAPP_URL'),
 } as const;

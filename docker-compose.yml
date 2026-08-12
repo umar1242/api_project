@@ -95,7 +95,6 @@ services:
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
-    - MINI_APP_URL=${REGISTRAR_WEBAPP_URL}
     depends_on:
       api:
         condition: service_healthy
@@ -128,7 +127,6 @@ services:
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
-    - MAIN_MINI_APP_URL=${MAIN_WEBAPP_URL}
     depends_on:
       api:
         condition: service_healthy
@@ -149,7 +147,6 @@ services:
     - .env
     environment:
     - NODE_ENV=development
-    - VITE_API_URL=http://api:3000
     networks:
     - backend-net
   homework-bot:
@@ -164,7 +161,6 @@ services:
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
-    - MINI_APP_URL=${HOMEWORK_WEBAPP_URL}
     depends_on:
       api:
         condition: service_healthy
@@ -185,7 +181,6 @@ services:
     - .env
     environment:
     - NODE_ENV=development
-    - VITE_API_URL=http://api:3000
     networks:
     - backend-net
   material-bot:
@@ -200,7 +195,6 @@ services:
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
-    - MINI_APP_URL=${MATERIAL_WEBAPP_URL}
     depends_on:
       api:
         condition: service_healthy
@@ -221,7 +215,6 @@ services:
     - .env
     environment:
     - NODE_ENV=development
-    - VITE_API_URL=http://api:3000
     networks:
     - backend-net
   cert-bot:
@@ -256,7 +249,6 @@ services:
     - .env
     environment:
     - NODE_ENV=development
-    - VITE_API_URL=http://api:3000
     networks:
     - backend-net
   cert-mini-app:
@@ -274,7 +266,6 @@ services:
     - .env
     environment:
     - NODE_ENV=development
-    - VITE_API_URL=http://api:3000
     networks:
     - backend-net
 volumes:
