@@ -247,7 +247,7 @@ export const VariantsPage: React.FC = () => {
                   </div>
                 )}
 
-                {(task.type === 'MULTIPLE_CHOICE' || task.type === 'SPECIFIC_ANSWER') && (
+                {(task.type === 'SPECIFIC_ANSWER' || (task.type === 'MULTIPLE_CHOICE' && task.optionsCount === 6)) && (
                   <label className="flex items-center gap-2 mt-2">
                     <input 
                       type="checkbox" 
@@ -255,7 +255,11 @@ export const VariantsPage: React.FC = () => {
                       checked={task.requiresAttachment}
                       onChange={(e) => handleTaskChange(i, 'requiresAttachment', e.target.checked)}
                     />
-                    <span className="text-xs text-gray-600 font-medium">Require student to attach photo of solution</span>
+                    <span className="text-xs text-gray-600 font-medium">
+                      {task.type === 'MULTIPLE_CHOICE'
+                        ? 'Require student to attach handwritten solution photo'
+                        : 'Require student to attach photo of solution'}
+                    </span>
                   </label>
                 )}
               </div>
