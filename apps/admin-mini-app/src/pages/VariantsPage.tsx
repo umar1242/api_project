@@ -59,13 +59,13 @@ export const VariantsPage: React.FC = () => {
       newTasks.push({ type: 'MULTIPLE_CHOICE', orderIndex: order++, optionsCount: 4, correctAnswer: '', requiresAttachment: false, requiresAdmin: false });
     }
     for(let i=0; i<type1Count6; i++) {
-      newTasks.push({ type: 'MULTIPLE_CHOICE', orderIndex: order++, optionsCount: 6, correctAnswer: '', requiresAttachment: false, requiresAdmin: false });
+      newTasks.push({ type: 'MULTIPLE_CHOICE', orderIndex: order++, optionsCount: 6, correctAnswer: '', requiresAttachment: false, requiresAdmin: false, maxAttachments: 4 });
     }
     for(let i=0; i<type2Count; i++) {
-      newTasks.push({ type: 'SPECIFIC_ANSWER', orderIndex: order++, correctAnswer: '', requiresAttachment: false, requiresAdmin: false });
+      newTasks.push({ type: 'SPECIFIC_ANSWER', orderIndex: order++, correctAnswer: '', requiresAttachment: false, requiresAdmin: false, maxAttachments: 4 });
     }
     for(let i=0; i<type3Count; i++) {
-      newTasks.push({ type: 'WRITTEN_WORK', orderIndex: order++, correctAnswer: '', requiresAttachment: true, requiresAdmin: true });
+      newTasks.push({ type: 'WRITTEN_WORK', orderIndex: order++, correctAnswer: '', requiresAttachment: true, requiresAdmin: true, maxAttachments: 4 });
     }
     setTasks(newTasks);
     setStep(2);
@@ -98,7 +98,14 @@ export const VariantsPage: React.FC = () => {
     
     // Auto sync logic for WRITTEN_WORK
     if (updated[index].type === 'WRITTEN_WORK' && field === 'requiresAdmin') {
-      updated[index].requiresAttachment = value; 
+      updated[index].requiresAttachment = value;
+      if (value && !updated[index].maxAttachments) {
+        updated[index].maxAttachments = 4;
+      }
+    }
+    // When attachment requirement is turned on for other task types, default the limit
+    if (field === 'requiresAttachment' && value && !updated[index].maxAttachments) {
+      updated[index].maxAttachments = 4;
     }
     setTasks(updated);
   };
@@ -131,7 +138,8 @@ export const VariantsPage: React.FC = () => {
           optionsCount: t.optionsCount,
           correctAnswer: t.correctAnswer,
           requiresAdmin: t.requiresAdmin,
-          requiresAttachment: t.requiresAttachment
+          requiresAttachment: t.requiresAttachment,
+          maxAttachments: t.requiresAttachment ? (t.maxAttachments || 4) : undefined
         }))
       });
       WebApp.HapticFeedback.notificationOccurred('success');
@@ -254,6 +262,17 @@ export const VariantsPage: React.FC = () => {
                       />
                       <span className="text-sm font-semibold text-blue-900">Admin Grading + Photo Upload Mode</span>
                     </label>
+
+                    {task.requiresAttachment && (
+                      <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2 mt-3 border border-gray-100">
+                        <span className="text-xs text-gray-600 font-medium">Photo limit (1-4)</span>
+                        <div className="flex items-center gap-2">
+                          <button className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => handleTaskChange(i, 'maxAttachments', Math.max(1, (task.maxAttachments || 4) - 1))}>-</button>
+                          <span className="font-bold text-sm w-4 text-center">{task.maxAttachments || 4}</span>
+                          <button className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => handleTaskChange(i, 'maxAttachments', Math.min(4, (task.maxAttachments || 4) + 1))}>+</button>
+                        </div>
+                      </div>
+                    )}
                     
                     {!task.requiresAdmin && (
                       <div className="input-group mt-3">
@@ -268,19 +287,32 @@ export const VariantsPage: React.FC = () => {
                 )}
 
                 {(task.type === 'SPECIFIC_ANSWER' || (task.type === 'MULTIPLE_CHOICE' && task.optionsCount === 6)) && (
-                  <label className="flex items-center gap-2 mt-2">
-                    <input 
-                      type="checkbox" 
-                      className="rounded text-blue-500 focus:ring-blue-500"
-                      checked={task.requiresAttachment}
-                      onChange={(e) => handleTaskChange(i, 'requiresAttachment', e.target.checked)}
-                    />
-                    <span className="text-xs text-gray-600 font-medium">
-                      {task.type === 'MULTIPLE_CHOICE'
-                        ? 'Require student to attach handwritten solution photo'
-                        : 'Require student to attach photo of solution'}
-                    </span>
-                  </label>
+                  <div className="mt-2">
+                    <label className="flex items-center gap-2">
+                      <input 
+                        type="checkbox" 
+                        className="rounded text-blue-500 focus:ring-blue-500"
+                        checked={task.requiresAttachment}
+                        onChange={(e) => handleTaskChange(i, 'requiresAttachment', e.target.checked)}
+                      />
+                      <span className="text-xs text-gray-600 font-medium">
+                        {task.type === 'MULTIPLE_CHOICE'
+                          ? 'Require student to attach handwritten solution photo'
+                          : 'Require student to attach photo of solution'}
+                      </span>
+                    </label>
+
+                    {task.requiresAttachment && (
+                      <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2 mt-2 border border-gray-100">
+                        <span className="text-xs text-gray-600 font-medium">Photo limit (1-4)</span>
+                        <div className="flex items-center gap-2">
+                          <button className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => handleTaskChange(i, 'maxAttachments', Math.max(1, (task.maxAttachments || 4) - 1))}>-</button>
+                          <span className="font-bold text-sm w-4 text-center">{task.maxAttachments || 4}</span>
+                          <button className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => handleTaskChange(i, 'maxAttachments', Math.min(4, (task.maxAttachments || 4) + 1))}>+</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
