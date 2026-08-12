@@ -1,28 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, FileText, CheckCircle, Calendar, ArrowRight, Loader2 } from 'lucide-react';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
 import { apiClient } from '../api/client';
 import { MathKeyboard } from '../components/MathKeyboard';
 
+const DRAFT_KEY = 'variant_builder_draft';
+
+const loadDraft = (): any => {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
 export const VariantsPage: React.FC = () => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [fileUrl, setFileUrl] = useState('');
-  const [fileName, setFileName] = useState('');
+  const initialDraft = loadDraft();
+
+  const [title, setTitle] = useState(initialDraft.title || '');
+  const [description, setDescription] = useState(initialDraft.description || '');
+  const [fileUrl, setFileUrl] = useState(initialDraft.fileUrl || '');
+  const [fileName, setFileName] = useState(initialDraft.fileName || '');
   const [isUploading, setIsUploading] = useState(false);
-  const [startsAt, setStartsAt] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [startsAt, setStartsAt] = useState(initialDraft.startsAt || '');
+  const [deadline, setDeadline] = useState(initialDraft.deadline || '');
   
   // Tasks configuration
-  const [type1Count4, setType1Count4] = useState(0);
-  const [type1Count6, setType1Count6] = useState(0);
-  const [type2Count, setType2Count] = useState(0);
-  const [type3Count, setType3Count] = useState(0);
+  const [type1Count4, setType1Count4] = useState(initialDraft.type1Count4 || 0);
+  const [type1Count6, setType1Count6] = useState(initialDraft.type1Count6 || 0);
+  const [type2Count, setType2Count] = useState(initialDraft.type2Count || 0);
+  const [type3Count, setType3Count] = useState(initialDraft.type3Count || 0);
 
-  const [step, setStep] = useState(1);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [step, setStep] = useState(initialDraft.step && initialDraft.step < 4 ? initialDraft.step : 1);
+  const [tasks, setTasks] = useState<any[]>(initialDraft.tasks || []);
   const [shareLink, setShareLink] = useState('');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        title, description, fileUrl, fileName, startsAt, deadline,
+        type1Count4, type1Count6, type2Count, type3Count, step, tasks,
+      }));
+    } catch {
+      // localStorage может быть недоступен или переполнен — пропускаем молча
+    }
+  }, [title, description, fileUrl, fileName, startsAt, deadline, type1Count4, type1Count6, type2Count, type3Count, step, tasks]);
 
   const handleGenerateTasks = () => {
     if (!title || !startsAt || !deadline) {
@@ -111,6 +135,7 @@ export const VariantsPage: React.FC = () => {
         }))
       });
       WebApp.HapticFeedback.notificationOccurred('success');
+      localStorage.removeItem(DRAFT_KEY);
       setShareLink(`https://t.me/cert_bot?start=variant_${data.id}`);
       setStep(4);
     } catch (error) {
@@ -136,7 +161,7 @@ export const VariantsPage: React.FC = () => {
           <button className="btn btn--primary btn--full glass-btn" onClick={handleShare}>
             Share via Telegram
           </button>
-          <button className="btn btn--secondary btn--full" onClick={() => { setStep(1); setTitle(''); setTasks([]); setType1Count4(0); setType1Count6(0); setType2Count(0); setType3Count(0); }}>
+          <button className="btn btn--secondary btn--full" onClick={() => { localStorage.removeItem(DRAFT_KEY); setStep(1); setTitle(''); setDescription(''); setFileUrl(''); setFileName(''); setStartsAt(''); setDeadline(''); setTasks([]); setType1Count4(0); setType1Count6(0); setType2Count(0); setType3Count(0); }}>
             Create Another
           </button>
         </div>
