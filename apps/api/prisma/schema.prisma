@@ -480,6 +480,7 @@ model VariantTask {
   requiresAdmin Boolean  @default(false) @map("requires_admin")
   requiresAttachment Boolean @default(false) @map("requires_attachment")
   optionsCount  Int?     @map("options_count") // 4 or 6 for Type 1
+  maxAttachments Int?    @default(4) @map("max_attachments") // 1-4, only relevant for WRITTEN_WORK + requiresAdmin
   correctAnswer String?  @map("correct_answer")
 
   variant Variant             @relation(fields: [variantId], references: [id])
@@ -509,13 +510,13 @@ model VariantSubmission {
 }
 
 model VariantTaskAnswer {
-  id           BigInt  @id @default(autoincrement())
-  submissionId BigInt  @map("submission_id")
-  taskId       BigInt  @map("task_id")
-  answer       String? @db.Text
-  fileUrl      String? @map("file_url") @db.VarChar(500)
+  id           BigInt   @id @default(autoincrement())
+  submissionId BigInt   @map("submission_id")
+  taskId       BigInt   @map("task_id")
+  answer       String?  @db.Text
+  fileUrls     String[] @default([]) @map("file_urls")
   score        Int?
-  feedback     String? @db.Text
+  feedback     String?  @db.Text
 
   submission VariantSubmission @relation(fields: [submissionId], references: [id])
   task       VariantTask       @relation(fields: [taskId], references: [id])
