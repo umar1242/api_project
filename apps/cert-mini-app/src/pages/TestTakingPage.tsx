@@ -14,6 +14,8 @@ export const TestTakingPage: React.FC = () => {
   const [test, setTest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [fileUrls, setFileUrls] = useState<Record<string, string[]>>({});
+  const [uploadingTaskId, setUploadingTaskId] = useState<string | null>(null);
   const [timeLeft] = useState(3600); // 1 hour demo timer
 
   useEffect(() => {
@@ -44,6 +46,40 @@ export const TestTakingPage: React.FC = () => {
     setAnswers(prev => ({ ...prev, [taskId]: answer }));
   };
 
+  const handleFileUpload = async (taskId: string, files: FileList | null, limit: number) => {
+    if (!files || files.length === 0) return;
+    const current = fileUrls[taskId] || [];
+    const remainingSlots = limit - current.length;
+    if (remainingSlots <= 0) {
+      WebApp.showAlert(`You can attach up to ${limit} photo(s) for this task.`);
+      return;
+    }
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    setUploadingTaskId(taskId);
+    try {
+      const uploaded: string[] = [];
+      for (const file of filesToUpload) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const { data } = await apiClient.post('/files/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        uploaded.push(data.fileUrl);
+      }
+      setFileUrls(prev => ({ ...prev, [taskId]: [...(prev[taskId] || []), ...uploaded] }));
+      WebApp.HapticFeedback.notificationOccurred('success');
+    } catch (error) {
+      WebApp.HapticFeedback.notificationOccurred('error');
+      WebApp.showAlert('Failed to upload photo. Please try again.');
+    } finally {
+      setUploadingTaskId(null);
+    }
+  };
+
+  const handleRemoveFile = (taskId: string, url: string) => {
+    setFileUrls(prev => ({ ...prev, [taskId]: (prev[taskId] || []).filter(u => u !== url) }));
+  };
+
   const handleSubmit = async () => {
     WebApp.HapticFeedback.notificationOccurred('success');
     WebApp.showConfirm('Are you sure you want to finish the test?', async (confirm: boolean) => {
@@ -53,6 +89,7 @@ export const TestTakingPage: React.FC = () => {
           await apiClient.post(`/variants/${id}/submissions`, {
             userId,
             answers,
+            fileUrls,
           });
           WebApp.showAlert('Test submitted successfully! Waiting for results...');
           navigate('/tests');
@@ -120,19 +157,46 @@ export const TestTakingPage: React.FC = () => {
             )}
 
             {task.type === 'WRITTEN_WORK' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <textarea
-                  className="form-textarea"
-                  style={{ marginTop: '4px', fontSize: '14px' }}
-                  placeholder="Type your detailed solution here..."
-                  value={answers[task.id] || ''}
-                  onChange={(e) => handleAnswerChange(task.id, e.target.value)}
-                />
-                {task.requiresAdmin && (
-                  <button className="upload-box" style={{ padding: '12px', flexDirection: 'row', justifyContent: 'center' }}>
+              <textarea
+                className="form-textarea"
+                style={{ marginTop: '4px', fontSize: '14px' }}
+                placeholder="Type your detailed solution here..."
+                value={answers[task.id] || ''}
+                onChange={(e) => handleAnswerChange(task.id, e.target.value)}
+              />
+            )}
+
+            {task.requiresAttachment && (
+              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--tg-hint)' }}>
+                  Attach photo of solution ({(fileUrls[task.id] || []).length}/{task.maxAttachments || 4})
+                </div>
+                {(fileUrls[task.id] || []).length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {(fileUrls[task.id] || []).map((url: string) => (
+                      <div key={url} style={{ position: 'relative' }}>
+                        <img src={url} alt="attachment" style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }} />
+                        <button
+                          onClick={() => handleRemoveFile(task.id, url)}
+                          style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#ef4444', color: 'white', fontSize: '12px', lineHeight: '20px', border: 'none', padding: 0 }}
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {(fileUrls[task.id] || []).length < (task.maxAttachments || 4) && (
+                  <label className="upload-box" style={{ padding: '12px', flexDirection: 'row', justifyContent: 'center', cursor: uploadingTaskId === task.id ? 'default' : 'pointer' }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      style={{ display: 'none' }}
+                      disabled={uploadingTaskId === task.id}
+                      onChange={(e) => handleFileUpload(task.id, e.target.files, task.maxAttachments || 4)}
+                    />
                     <ImageIcon size={18} />
-                    <span style={{ fontSize: '14px' }}>Attach Photo of Solution</span>
-                  </button>
+                    <span style={{ fontSize: '14px' }}>{uploadingTaskId === task.id ? 'Uploading...' : 'Attach Photo of Solution'}</span>
+                  </label>
                 )}
               </div>
             )}
