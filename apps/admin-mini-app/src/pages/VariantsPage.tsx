@@ -3,6 +3,7 @@ import { Settings, FileText, CheckCircle, Calendar, ArrowRight, Loader2 } from '
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
 import { apiClient } from '../api/client';
+import { MathKeyboard } from '../components/MathKeyboard';
 
 export const VariantsPage: React.FC = () => {
   const [title, setTitle] = useState('');
@@ -210,12 +211,9 @@ export const VariantsPage: React.FC = () => {
                 {task.type === 'SPECIFIC_ANSWER' && (
                   <div className="input-group mb-3">
                     <label className="input-label">Correct Answer (Math/Text)</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      value={task.correctAnswer} 
-                      onChange={(e) => handleTaskChange(i, 'correctAnswer', e.target.value)} 
-                      placeholder="e.g. 42 or x=5"
+                    <MathKeyboard
+                      initialLatex={task.correctAnswer || ''}
+                      onLatexChange={(val) => handleTaskChange(i, 'correctAnswer', val)}
                     />
                   </div>
                 )}
@@ -235,12 +233,9 @@ export const VariantsPage: React.FC = () => {
                     {!task.requiresAdmin && (
                       <div className="input-group mt-3">
                         <label className="input-label">Specific Answer</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          value={task.correctAnswer} 
-                          onChange={(e) => handleTaskChange(i, 'correctAnswer', e.target.value)} 
-                          placeholder="Answer for auto-check..."
+                        <MathKeyboard
+                          initialLatex={task.correctAnswer || ''}
+                          onLatexChange={(val) => handleTaskChange(i, 'correctAnswer', val)}
                         />
                       </div>
                     )}
