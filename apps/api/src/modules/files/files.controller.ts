@@ -1,6 +1,8 @@
 import {
   Controller,
   Post,
+  Get,
+  Param,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
@@ -24,7 +26,11 @@ export class FilesController {
     )
     file: Express.Multer.File,
   ) {
-    const fileUrl = await this.filesService.uploadFile(file.originalname);
-    return { fileUrl };
+    return this.filesService.uploadFile(file);
+  }
+
+  @Get(":key")
+  async getFile(@Param("key") key: string) {
+    return this.filesService.getFile(key);
   }
 }

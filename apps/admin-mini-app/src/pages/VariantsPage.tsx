@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, FileText, CheckCircle, Calendar, ArrowRight } from 'lucide-react';
+import { Settings, FileText, CheckCircle, Calendar, ArrowRight, Loader2 } from 'lucide-react';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
 import { apiClient } from '../api/client';
@@ -7,6 +7,9 @@ import { apiClient } from '../api/client';
 export const VariantsPage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [fileUrl, setFileUrl] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const [startsAt, setStartsAt] = useState('');
   const [deadline, setDeadline] = useState('');
   
@@ -40,6 +43,27 @@ export const VariantsPage: React.FC = () => {
     setStep(2);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await apiClient.post('/files/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setFileUrl(data.fileUrl);
+      setFileName(file.name);
+      WebApp.HapticFeedback.notificationOccurred('success');
+    } catch (error) {
+      WebApp.HapticFeedback.notificationOccurred('error');
+      WebApp.showAlert('Failed to upload file. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleTaskChange = (index: number, field: string, value: any) => {
     const updated = [...tasks];
     updated[index][field] = value;
@@ -69,6 +93,7 @@ export const VariantsPage: React.FC = () => {
       const { data } = await apiClient.post('/variants', {
         title,
         description,
+        fileUrl: fileUrl || undefined,
         startsAt: startsAt || undefined,
         deadlineAt: deadline || undefined,
         type: 'CERTIFICATION',
@@ -281,10 +306,32 @@ export const VariantsPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="upload-box">
-            <FileText size={24} className="text-blue-500 mb-2" />
-            <span className="text-sm font-semibold text-blue-700">Upload Task File (PDF/Word/Images)</span>
-          </div>
+          <label className="upload-box" style={{ cursor: isUploading ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
+              disabled={isUploading}
+            />
+            {isUploading ? (
+              <>
+                <Loader2 size={24} className="text-blue-500 mb-2 animate-spin" />
+                <span className="text-sm font-semibold text-blue-700">Uploading...</span>
+              </>
+            ) : fileUrl ? (
+              <>
+                <CheckCircle size={24} className="text-green-500 mb-2" />
+                <span className="text-sm font-semibold text-green-700">{fileName}</span>
+                <span className="text-xs text-gray-500 mt-1">Tap to replace</span>
+              </>
+            ) : (
+              <>
+                <FileText size={24} className="text-blue-500 mb-2" />
+                <span className="text-sm font-semibold text-blue-700">Upload Task File (PDF/Word/Images)</span>
+              </>
+            )}
+          </label>
         </div>
       </div>
 

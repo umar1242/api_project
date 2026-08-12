@@ -20,6 +20,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      minio:
+        condition: service_healthy
     command: npm run start:dev
     networks:
     - backend-net
@@ -83,6 +85,28 @@ services:
       retries: 5
     networks:
     - backend-net
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+    - 127.0.0.1:9000:9000
+    - 127.0.0.1:9001:9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+    - miniodata:/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:9000/minio/health/live || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+    - backend-net
+
   registrar-bot:
     build:
       context: ./apps/registrar-bot
@@ -307,5 +331,6 @@ services:
 volumes:
   pgdata: null
   redisdata: null
+  miniodata:
 networks:
   backend-net: null
