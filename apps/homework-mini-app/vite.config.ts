@@ -11,7 +11,7 @@ export default defineConfig({
     fs: {
       allow: ["../.."]
     },
-    port: 5176,
+    port: 5175,
     host: true,
     allowedHosts: true,
     proxy: {

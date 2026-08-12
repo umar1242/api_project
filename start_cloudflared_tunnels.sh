@@ -80,6 +80,48 @@ echo "----------------------------------------"
 echo "Ensuring all services (including mini-apps) are up..."
 sudo docker compose up -d
 
+echo "Waiting for mini-apps to become healthy (up to 60 seconds)..."
+MINI_APPS="registrar-mini-app main-mini-app homework-mini-app material-mini-app admin-mini-app cert-mini-app"
+HEALTH_TIMEOUT=60
+HEALTH_ELAPSED=0
+MINI_APPS_HEALTHY=false
+
+while [ $HEALTH_ELAPSED -lt $HEALTH_TIMEOUT ]; do
+    ALL_HEALTHY=true
+    for app in $MINI_APPS; do
+        STATUS=$(sudo docker inspect --format='{{.State.Health.Status}}' "api-${app}-1" 2>/dev/null)
+        if [ "$STATUS" != "healthy" ]; then
+            ALL_HEALTHY=false
+        fi
+    done
+
+    if [ "$ALL_HEALTHY" = true ]; then
+        MINI_APPS_HEALTHY=true
+        break
+    fi
+
+    sleep 2
+    ((HEALTH_ELAPSED+=2))
+done
+
+echo "----------------------------------------"
+echo "Mini-App Health Check Summary:"
+echo "----------------------------------------"
+for app in $MINI_APPS; do
+    STATUS=$(sudo docker inspect --format='{{.State.Health.Status}}' "api-${app}-1" 2>/dev/null)
+    echo "$app: ${STATUS:-not found}"
+done
+echo "----------------------------------------"
+
+if [ "$MINI_APPS_HEALTHY" != true ]; then
+    echo "ERROR: One or more mini-apps did not become healthy within ${HEALTH_TIMEOUT}s."
+    echo "Aborting before restarting bots — will NOT publish broken tunnel links to Telegram."
+    echo "Check logs with: sudo docker compose logs --tail 30 <service-name>"
+    exit 1
+fi
+
+echo "All mini-apps are healthy. Proceeding to restart bots..."
+
 BOT_SERVICES="admin-bot cert-bot homework-bot main-bot material-bot registrar-bot"
 echo "Restarting bots via Docker Compose (force recreating to pick up new .env)..."
 sudo docker compose up -d --force-recreate $BOT_SERVICES
