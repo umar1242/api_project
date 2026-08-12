@@ -21,6 +21,9 @@ export class VariantTaskResponseDto {
 
   @ApiPropertyOptional()
   optionsCount?: number;
+
+  @ApiPropertyOptional()
+  maxAttachments?: number;
 }
 
 export class VariantTaskAdminResponseDto extends VariantTaskResponseDto {
@@ -92,6 +95,9 @@ export class VariantPublicTaskResponseDto {
 
   @ApiPropertyOptional()
   optionsCount?: number;
+
+  @ApiPropertyOptional()
+  maxAttachments?: number;
 
   @ApiProperty()
   createdAt: Date;

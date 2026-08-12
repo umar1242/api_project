@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 import { CreateVariantDto } from "./dto/create-variant.dto";
 import {
@@ -61,6 +66,7 @@ export class VariantsService {
         requiresAdmin: task.requiresAdmin,
         requiresAttachment: task.requiresAttachment,
         optionsCount: task.optionsCount,
+        maxAttachments: task.maxAttachments,
       })),
     };
   }
@@ -88,6 +94,7 @@ export class VariantsService {
         requiresAdmin: task.requiresAdmin,
         requiresAttachment: task.requiresAttachment,
         optionsCount: task.optionsCount,
+        maxAttachments: task.maxAttachments,
         correctAnswer: task.correctAnswer,
       })),
     };
@@ -139,6 +146,9 @@ export class VariantsService {
               requiresAdmin: task.requiresAdmin || false,
               requiresAttachment: task.requiresAttachment || false,
               optionsCount: task.optionsCount,
+              maxAttachments: task.requiresAttachment
+                ? (task.maxAttachments ?? 4)
+                : null,
               correctAnswer: task.correctAnswer,
             })) || [],
         },
@@ -202,7 +212,12 @@ export class VariantsService {
   async updateTasks(
     id: string,
     updateTasksDto: {
-      tasks: { id: string; correctAnswer?: string; optionsCount?: number }[];
+      tasks: {
+        id: string;
+        correctAnswer?: string;
+        optionsCount?: number;
+        maxAttachments?: number;
+      }[];
     },
   ) {
     for (const task of updateTasksDto.tasks) {
@@ -211,6 +226,9 @@ export class VariantsService {
         data: {
           correctAnswer: task.correctAnswer,
           optionsCount: task.optionsCount,
+          ...(task.maxAttachments !== undefined
+            ? { maxAttachments: task.maxAttachments }
+            : {}),
         },
       });
     }
@@ -242,7 +260,19 @@ export class VariantsService {
 
     const answersToCreate = variant.tasks.map((task: VariantTask) => {
       const studentAnswer = data.answers[task.id.toString()];
-      const fileUrl = data.fileUrls?.[task.id.toString()];
+      let fileUrls = data.fileUrls?.[task.id.toString()];
+
+      if (task.requiresAttachment && fileUrls && fileUrls.length > 0) {
+        const limit = task.maxAttachments ?? 4;
+        if (fileUrls.length > limit) {
+          throw new BadRequestException(
+            `Task ${task.id.toString()} allows at most ${limit} attachment(s), got ${fileUrls.length}`,
+          );
+        }
+      }
+      if (!task.requiresAttachment) {
+        fileUrls = undefined;
+      }
 
       let score = 0;
       let isCorrect = false;
@@ -271,7 +301,7 @@ export class VariantsService {
       return {
         taskId: task.id,
         answer: studentAnswer,
-        fileUrl: fileUrl,
+        fileUrls: fileUrls ?? [],
         score:
           task.requiresAdmin || task.type === "WRITTEN_WORK" ? null : score,
       };

@@ -7,6 +7,9 @@ import {
   IsDateString,
   IsNumber,
   IsBoolean,
+  IsInt,
+  Min,
+  Max,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { VariantType, TaskType } from "@prisma/client";
@@ -29,6 +32,12 @@ export class CreateVariantTaskDto {
   @IsNumber()
   @IsOptional()
   optionsCount?: number;
+
+  @IsInt()
+  @Min(1)
+  @Max(4)
+  @IsOptional()
+  maxAttachments?: number;
 
   @IsString()
   @IsOptional()

@@ -9,8 +9,8 @@ export class SubmitVariantDto {
   @IsObject()
   answers: Record<string, string>;
 
-  // Record mapping taskId to a fileUrl (for photo uploads)
+  // Record mapping taskId to an array of file URLs (1-4 photos, only for tasks with requiresAttachment)
   @IsObject()
   @IsOptional()
-  fileUrls?: Record<string, string>;
+  fileUrls?: Record<string, string[]>;
 }
