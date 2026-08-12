@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { apiClient } from '../api/client';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
@@ -97,10 +97,29 @@ export const GradeSubmissionPage: React.FC = () => {
                 ) : (
                   <div className="text-gray-400 italic">No answer provided</div>
                 )}
-                {ans?.fileUrl && (
-                  <a href={ans.fileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-500 mt-2">
-                    <ImageIcon size={14} /> View Attached File
-                  </a>
+                {ans?.fileUrls && ans.fileUrls.length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-xs text-gray-500 uppercase mb-2">
+                      Attached Photos ({ans.fileUrls.length})
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {ans.fileUrls.map((url: string, idx: number) => (
+                        <a
+                          key={url}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={url}
+                            alt={`Attachment ${idx + 1}`}
+                            className="w-16 h-16 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 
