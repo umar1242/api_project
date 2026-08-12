@@ -14,8 +14,8 @@ export const VariantsPage: React.FC = () => {
   const [deadline, setDeadline] = useState('');
   
   // Tasks configuration
-  const [type1Count, setType1Count] = useState(0);
-  const [type1OptionCount, setType1OptionCount] = useState(4);
+  const [type1Count4, setType1Count4] = useState(0);
+  const [type1Count6, setType1Count6] = useState(0);
   const [type2Count, setType2Count] = useState(0);
   const [type3Count, setType3Count] = useState(0);
 
@@ -30,8 +30,11 @@ export const VariantsPage: React.FC = () => {
     }
     const newTasks = [];
     let order = 1;
-    for(let i=0; i<type1Count; i++) {
-      newTasks.push({ type: 'MULTIPLE_CHOICE', orderIndex: order++, optionsCount: type1OptionCount, correctAnswer: '', requiresAttachment: false, requiresAdmin: false });
+    for(let i=0; i<type1Count4; i++) {
+      newTasks.push({ type: 'MULTIPLE_CHOICE', orderIndex: order++, optionsCount: 4, correctAnswer: '', requiresAttachment: false, requiresAdmin: false });
+    }
+    for(let i=0; i<type1Count6; i++) {
+      newTasks.push({ type: 'MULTIPLE_CHOICE', orderIndex: order++, optionsCount: 6, correctAnswer: '', requiresAttachment: false, requiresAdmin: false });
     }
     for(let i=0; i<type2Count; i++) {
       newTasks.push({ type: 'SPECIFIC_ANSWER', orderIndex: order++, correctAnswer: '', requiresAttachment: false, requiresAdmin: false });
@@ -132,7 +135,7 @@ export const VariantsPage: React.FC = () => {
           <button className="btn btn--primary btn--full glass-btn" onClick={handleShare}>
             Share via Telegram
           </button>
-          <button className="btn btn--secondary btn--full" onClick={() => { setStep(1); setTitle(''); setTasks([]); setType1Count(0); setType2Count(0); setType3Count(0); }}>
+          <button className="btn btn--secondary btn--full" onClick={() => { setStep(1); setTitle(''); setTasks([]); setType1Count4(0); setType1Count6(0); setType2Count(0); setType3Count(0); }}>
             Create Another
           </button>
         </div>
@@ -337,29 +340,37 @@ export const VariantsPage: React.FC = () => {
 
       <h2 className="text-lg font-bold text-gray-800 mb-3 px-1">Task Configuration</h2>
       
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div className="card glass-form !p-4">
-          <span className="text-sm font-bold text-gray-800 block mb-3">Type 1 (A-D/F)</span>
-          <div className="flex items-center justify-between bg-gray-50 rounded-lg p-1 border border-gray-100">
-            <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType1Count(Math.max(0, type1Count - 1))}>-</button>
-            <span className="font-bold text-lg">{type1Count}</span>
-            <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType1Count(type1Count + 1)}>+</button>
+      <div className="card glass-form !p-4 mb-3">
+        <span className="text-sm font-bold text-gray-800 block mb-3">Type 1 (Multiple Choice)</span>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <span className="text-xs text-gray-500 block mb-2">4 Options (A-D)</span>
+            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-1 border border-gray-100">
+              <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType1Count4(Math.max(0, type1Count4 - 1))}>-</button>
+              <span className="font-bold text-lg">{type1Count4}</span>
+              <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType1Count4(type1Count4 + 1)}>+</button>
+            </div>
           </div>
-          {type1Count > 0 && (
-             <select className="form-select mt-3 w-full text-xs" value={type1OptionCount} onChange={e => setType1OptionCount(Number(e.target.value))}>
-                <option value={4}>4 Options (A-D)</option>
-                <option value={6}>6 Options (A-F)</option>
-             </select>
-          )}
+          <div>
+            <span className="text-xs text-gray-500 block mb-2">6 Options (A-F)</span>
+            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-1 border border-gray-100">
+              <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType1Count6(Math.max(0, type1Count6 - 1))}>-</button>
+              <span className="font-bold text-lg">{type1Count6}</span>
+              <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType1Count6(type1Count6 + 1)}>+</button>
+            </div>
+          </div>
         </div>
+        {type1Count6 > 0 && (
+          <p className="text-xs text-gray-400 mt-3">6-option questions are always placed after 4-option questions within Type 1.</p>
+        )}
+      </div>
 
-        <div className="card glass-form !p-4">
-          <span className="text-sm font-bold text-gray-800 block mb-3">Type 2 (Math/Text)</span>
-          <div className="flex items-center justify-between bg-gray-50 rounded-lg p-1 border border-gray-100">
-            <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType2Count(Math.max(0, type2Count - 1))}>-</button>
-            <span className="font-bold text-lg">{type2Count}</span>
-            <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType2Count(type2Count + 1)}>+</button>
-          </div>
+      <div className="card glass-form !p-4 mb-3">
+        <span className="text-sm font-bold text-gray-800 block mb-3">Type 2 (Math/Text)</span>
+        <div className="flex items-center justify-between bg-gray-50 rounded-lg p-1 border border-gray-100 max-w-[50%] mx-auto">
+          <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType2Count(Math.max(0, type2Count - 1))}>-</button>
+          <span className="font-bold text-lg">{type2Count}</span>
+          <button className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-gray-600 shadow-sm border border-gray-200 active:scale-95" onClick={() => setType2Count(type2Count + 1)}>+</button>
         </div>
       </div>
 
