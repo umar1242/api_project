@@ -6,6 +6,15 @@ import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
 
 export const EnterCodePage: React.FC = () => {
+  const debugInfo = {
+    hasInitData: !!(WebApp as any).initData,
+    initDataLength: (WebApp as any).initData?.length || 0,
+    hasInitDataUnsafe: !!(WebApp as any).initDataUnsafe,
+    userId: (WebApp as any).initDataUnsafe?.user?.id ?? 'none',
+    platform: (WebApp as any).platform,
+    version: (WebApp as any).version,
+  };
+
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -35,6 +44,10 @@ export const EnterCodePage: React.FC = () => {
       <div className="page-header" style={{ marginBottom: '16px' }}>
         <h1 className="page-header__title gradient-text">Enter Code</h1>
         <KeyRound className="page-header__icon" style={{ color: 'var(--tg-btn)' }} />
+      </div>
+
+      <div style={{ background: '#fee', border: '2px solid red', padding: '10px', marginBottom: '16px', fontSize: '11px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+        DEBUG: {JSON.stringify(debugInfo)}
       </div>
 
       <div className="card glass-form" style={{ marginTop: '16px', textAlign: 'center' }}>
