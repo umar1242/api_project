@@ -278,7 +278,7 @@ export class VariantsService {
     let totalScore = 0;
     let needsAdminCheck = false;
 
-    const answersToCreate = variant.tasks.map((task: VariantTask) => {
+    const answersToCreate = variant.tasks.map((task: any) => {
       const studentAnswer = data.answers[task.id.toString()];
       let fileUrls = data.fileUrls?.[task.id.toString()];
 
@@ -295,35 +295,61 @@ export class VariantsService {
       }
 
       let score = 0;
-      let isCorrect = false;
+      let subAnswersToSave: Record<string, string> | undefined;
 
-      // Auto-grade logic for MULTIPLE_CHOICE or SPECIFIC_ANSWER (without admin requirement)
-      if (
-        task.type === "MULTIPLE_CHOICE" ||
-        (task.type === "SPECIFIC_ANSWER" && !task.requiresAdmin)
-      ) {
-        if (
-          studentAnswer &&
-          studentAnswer.trim().toLowerCase() ===
-            task.correctAnswer?.trim().toLowerCase()
-        ) {
-          score = 1; // 1 point per task (can be adjusted)
-          isCorrect = true;
+      if (task.type === "WRITTEN_WORK" && task.subQuestions?.length > 0) {
+        // Задание Типа 3 с несколькими подвопросами (2-6+).
+        const studentSubAnswers: Record<string, string> =
+          data.subAnswers?.[task.id.toString()] || {};
+        subAnswersToSave = studentSubAnswers;
+
+        if (!task.requiresAdmin) {
+          // Режим 1: автопроверка — по баллу за каждый верно отвеченный подвопрос.
+          let correctCount = 0;
+          for (const sq of task.subQuestions) {
+            const studentSub = studentSubAnswers[sq.id.toString()];
+            if (
+              studentSub &&
+              sq.correctAnswer &&
+              studentSub.trim().toLowerCase() ===
+                sq.correctAnswer.trim().toLowerCase()
+            ) {
+              correctCount++;
+            }
+          }
+          score = correctCount;
+        } else {
+          // Режим 2: ручная проверка админом, балл появится после проверки.
+          needsAdminCheck = true;
+        }
+      } else {
+        // MULTIPLE_CHOICE, SPECIFIC_ANSWER, и WRITTEN_WORK без подвопросов (одиночный ответ).
+        // ВАЖНО: раньше ЛЮБОЕ задание WRITTEN_WORK принудительно уходило на ручную
+        // проверку, даже если admin не включал requiresAdmin — это был баг.
+        // Теперь на ручную проверку уходит только то, что admin явно пометил requiresAdmin.
+        if (!task.requiresAdmin) {
+          if (
+            studentAnswer &&
+            studentAnswer.trim().toLowerCase() ===
+              task.correctAnswer?.trim().toLowerCase()
+          ) {
+            score = 1;
+          }
+        } else {
+          needsAdminCheck = true;
         }
       }
 
-      if (task.requiresAdmin || task.type === "WRITTEN_WORK") {
-        needsAdminCheck = true;
-      } else {
+      if (!task.requiresAdmin) {
         totalScore += score;
       }
 
       return {
         taskId: task.id,
         answer: studentAnswer,
+        subAnswers: subAnswersToSave ?? undefined,
         fileUrls: fileUrls ?? [],
-        score:
-          task.requiresAdmin || task.type === "WRITTEN_WORK" ? null : score,
+        score: task.requiresAdmin ? null : score,
       };
     });
 
