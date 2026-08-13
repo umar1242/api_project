@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, ChevronRight } from 'lucide-react';
+import { BookOpen, Clock, ChevronRight, KeyRound } from 'lucide-react';
+import WebAppModule from "@twa-dev/sdk";
+const WebApp = (WebAppModule as any).default || WebAppModule;
 import { apiClient } from '../api/client';
 import { Loader } from '@shared-ui/core';
 
@@ -8,6 +10,7 @@ export const TestsPage: React.FC = () => {
   const [tests, setTests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -23,6 +26,7 @@ export const TestsPage: React.FC = () => {
     fetchTests();
   }, []);
 
+
   if (loading) return <div className="app-shell"><Loader message="Loading tests..." /></div>;
 
   return (
@@ -32,6 +36,14 @@ export const TestsPage: React.FC = () => {
         <BookOpen className="page-header__icon" style={{ color: 'var(--tg-btn)' }} />
       </div>
 
+      <button
+        className="card glass-form"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', marginBottom: '16px', cursor: 'pointer', color: 'var(--tg-btn)', fontWeight: 600 }}
+        onClick={() => navigate('/enter-code')}
+      >
+        <KeyRound size={18} /> Have a code? Enter it here
+      </button>
+
       {tests.length === 0 ? (
         <div className="empty-state glass-form" style={{ marginTop: '16px' }}>
           <BookOpen size={48} className="empty-state__icon" style={{ color: 'var(--tg-btn)', opacity: 0.5, marginBottom: '8px' }} />
@@ -40,6 +52,7 @@ export const TestsPage: React.FC = () => {
         </div>
       ) : (
         <div className="section" style={{ gap: '16px' }}>
+          <h3 className="font-bold text-lg mb-2 text-gray-800 px-1">Public Tests</h3>
           {tests.map(test => (
             <div key={test.id} className="card glass-form lesson-card" onClick={() => navigate(`/tests/${test.id}`)} style={{ cursor: 'pointer' }}>
               <div className="lesson-card__header" style={{ justifyContent: 'space-between' }}>

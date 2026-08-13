@@ -19,6 +19,7 @@ function BottomNav() {
 import { TestsPage } from './pages/TestsPage';
 import { TestTakingPage } from './pages/TestTakingPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
+import { EnterCodePage } from './pages/EnterCodePage';
 
 // Temporary placeholders for pages
 const ProfilePage = () => <div className="page"><div className="card glass-form"><h1>Profile</h1></div></div>;
@@ -44,6 +45,7 @@ function App() {
             <Route path="/" element={<Navigate to="/tests" replace />} />
             <Route path="/tests" element={<TestsPage />} />
             <Route path="/tests/:id" element={<TestTakingPage />} />
+            <Route path="/enter-code" element={<EnterCodePage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/tests" replace />} />
