@@ -24,6 +24,21 @@ export class VariantsService {
     private notificationsService: NotificationsService,
   ) {}
 
+  private async generateUniqueAccessCode(): Promise<string> {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    for (let attempt = 0; attempt < 20; attempt++) {
+      let code = '';
+      for (let i = 0; i < 5; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+      const existing = await this.prisma.variant.findUnique({
+        where: { accessCode: code },
+      });
+      if (!existing) return code;
+    }
+    throw new Error('Failed to generate a unique access code after 20 attempts');
+  }
+
   private mapVariantToPublicDto(
     variant: any,
   ): import("./dto/variant-response.dto").VariantPublicResponseDto {
@@ -52,6 +67,7 @@ export class VariantsService {
       description: variant.description,
       type: variant.type,
       fileUrl: variant.fileUrl,
+      accessCode: variant.accessCode,
       startsAt: variant.startsAt,
       deadlineAt: variant.deadlineAt,
       courseId: variant.courseId?.toString(),
@@ -84,6 +100,7 @@ export class VariantsService {
       description: variant.description,
       type: variant.type,
       fileUrl: variant.fileUrl,
+      accessCode: variant.accessCode,
       startsAt: variant.startsAt,
       deadlineAt: variant.deadlineAt,
       courseId: variant.courseId?.toString(),
@@ -137,12 +154,14 @@ export class VariantsService {
   }
 
   async create(data: CreateVariantDto) {
+    const accessCode = await this.generateUniqueAccessCode();
     const variant = await this.prisma.variant.create({
       data: {
         title: data.title,
         description: data.description,
         type: data.type,
         fileUrl: data.fileUrl,
+        accessCode,
         startsAt: data.startsAt ? new Date(data.startsAt) : null,
         deadlineAt: data.deadlineAt ? new Date(data.deadlineAt) : null,
         courseId: data.courseId ? BigInt(data.courseId) : null,
@@ -204,6 +223,26 @@ export class VariantsService {
       include: { tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } } },
     });
     if (!variant) throw new NotFoundException("Variant not found");
+
+    if (telegramId && variant.groupId) {
+      const enrollment = await this.prisma.enrollment.findFirst({
+        where: { groupId: variant.groupId, user: { telegramId }, status: { in: ["ACTIVE", "COMPLETED"] } }
+      });
+      if (!enrollment) {
+        throw new ForbiddenException("User is not enrolled in the group for this variant");
+      }
+    }
+
+    return this.mapVariantToDto(variant);
+  }
+
+  async findByCode(code: string, telegramId?: bigint) {
+    const normalizedCode = code.trim().toUpperCase();
+    const variant = await this.prisma.variant.findUnique({
+      where: { accessCode: normalizedCode },
+      include: { tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } } },
+    });
+    if (!variant) throw new NotFoundException("Invalid or unknown code");
 
     if (telegramId && variant.groupId) {
       const enrollment = await this.prisma.enrollment.findFirst({

@@ -67,6 +67,9 @@ export class VariantResponseDto {
   fileUrl?: string;
 
   @ApiPropertyOptional()
+  accessCode?: string;
+
+  @ApiPropertyOptional()
   startsAt?: Date;
 
   @ApiPropertyOptional()
@@ -140,6 +143,9 @@ export class VariantPublicResponseDto {
 
   @ApiPropertyOptional()
   fileUrl?: string;
+
+  @ApiPropertyOptional()
+  accessCode?: string;
 
   @ApiPropertyOptional()
   startsAt?: Date;

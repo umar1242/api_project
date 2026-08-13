@@ -82,6 +82,13 @@ export class VariantsController {
     return result;
   }
 
+  @ApiOperation({ summary: "Get a variant by access code" })
+  @ApiResponse({ status: 200, type: VariantResponseDto })
+  @Get("by-code/:code")
+  findByCode(@Param("code") code: string, @Req() req: any): Promise<VariantResponseDto> {
+    return this.variantsService.findByCode(code, req.telegramUser?.id ? BigInt(req.telegramUser.id) : undefined);
+  }
+
   @ApiOperation({ summary: "Get a variant by ID" })
   @ApiResponse({ status: 200, type: VariantResponseDto })
   @Get(":id")

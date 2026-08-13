@@ -453,6 +453,7 @@ model Variant {
   description String?     @db.Text
   type        VariantType @default(CERTIFICATION)
   fileUrl     String?     @map("file_url") @db.VarChar(500)
+  accessCode  String?     @unique @map("access_code") @db.VarChar(5)
   startsAt    DateTime?   @map("starts_at") @db.Timestamptz
   deadlineAt  DateTime?   @map("deadline_at") @db.Timestamptz
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz

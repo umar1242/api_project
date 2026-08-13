@@ -27,7 +27,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let statusCode: number;
     let errorBody: unknown;
 
-    if (exception instanceof HttpException) {
+    if (exception instanceof HttpException) { this.logger.error(`HTTP ${exception.getStatus()} on ${request.method} ${request.url}`, JSON.stringify(exception.getResponse()));
       statusCode = exception.getStatus();
       errorBody = exception.getResponse();
     } else {
