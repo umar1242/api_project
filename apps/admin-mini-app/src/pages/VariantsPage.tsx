@@ -35,7 +35,7 @@ export const VariantsPage: React.FC = () => {
 
   const [step, setStep] = useState(initialDraft.step && initialDraft.step < 4 ? initialDraft.step : 1);
   const [tasks, setTasks] = useState<any[]>(initialDraft.tasks || []);
-  const [shareLink, setShareLink] = useState('');
+  const [accessCode, setAccessCode] = useState('');
 
   useEffect(() => {
     try {
@@ -154,8 +154,7 @@ export const VariantsPage: React.FC = () => {
       });
       WebApp.HapticFeedback.notificationOccurred('success');
       localStorage.removeItem(DRAFT_KEY);
-      const botUsername = import.meta.env.VITE_CERT_BOT_USERNAME || 'quiz1242bot';
-      setShareLink(`https://t.me/${botUsername}?start=variant_${data.id}`);
+      setAccessCode(data.accessCode || '');
       setStep(4);
     } catch (error: any) {
       WebApp.HapticFeedback.notificationOccurred('error');
@@ -164,8 +163,10 @@ export const VariantsPage: React.FC = () => {
     }
   };
 
-  const handleShare = () => {
-    WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent('Join my new variant!')}`);
+  const handleCopyCode = () => {
+    if (WebApp.HapticFeedback) WebApp.HapticFeedback.notificationOccurred('success');
+    navigator.clipboard?.writeText(accessCode).catch(() => {});
+    WebApp.showAlert('Code copied to clipboard!');
   };
 
   if (step === 4) {
@@ -174,12 +175,12 @@ export const VariantsPage: React.FC = () => {
         <div className="empty-state glass-form mt-10">
           <CheckCircle size={64} className="text-green-500 mb-4" />
           <h2 className="empty-state__title">Variant Created!</h2>
-          <p className="empty-state__desc">Your variant is ready. Share this link with students.</p>
-          <div style={{ background: "var(--tg-secondary)", padding: "var(--space-3)", borderRadius: "var(--radius-lg)", wordBreak: "break-all", fontFamily: "monospace", border: "1px solid var(--tg-hint)", textAlign: "center", marginBottom: "var(--space-6)" }}>
-            {shareLink}
+          <p className="empty-state__desc">Give this code to students. They enter it inside the cert bot to open this test.</p>
+          <div style={{ background: "var(--tg-secondary)", padding: "var(--space-4)", borderRadius: "var(--radius-lg)", fontFamily: "monospace", fontSize: "32px", fontWeight: 700, letterSpacing: "6px", border: "1px solid var(--tg-hint)", textAlign: "center", marginBottom: "var(--space-6)" }}>
+            {accessCode}
           </div>
-          <button className="btn btn--primary btn--full glass-btn" onClick={handleShare}>
-            Share via Telegram
+          <button className="btn btn--primary btn--full glass-btn" onClick={handleCopyCode}>
+            Copy Code
           </button>
           <button className="btn btn--secondary btn--full" onClick={() => { localStorage.removeItem(DRAFT_KEY); setStep(1); setTitle(''); setDescription(''); setFileUrl(''); setFileName(''); setStartsAt(''); setDeadline(''); setTasks([]); setType1Count4(0); setType1Count6(0); setType2Count(0); setType3Count(0); }}>
             Create Another
