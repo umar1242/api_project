@@ -144,7 +144,8 @@ export const VariantsPage: React.FC = () => {
       });
       WebApp.HapticFeedback.notificationOccurred('success');
       localStorage.removeItem(DRAFT_KEY);
-      setShareLink(`https://t.me/cert_bot?start=variant_${data.id}`);
+      const botUsername = import.meta.env.VITE_CERT_BOT_USERNAME || 'quiz1242bot';
+      setShareLink(`https://t.me/${botUsername}?start=variant_${data.id}`);
       setStep(4);
     } catch (error) {
       WebApp.HapticFeedback.notificationOccurred('error');
