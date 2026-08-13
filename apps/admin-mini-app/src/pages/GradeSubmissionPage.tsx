@@ -79,7 +79,7 @@ export const GradeSubmissionPage: React.FC = () => {
       <div className="flex flex-col gap-5">
         {variant.tasks?.map((task: any) => {
           const ans = answers.find((a: any) => a.taskId === task.id);
-          const needsGrading = task.requiresAdmin || task.type === 'WRITTEN_WORK';
+          const needsGrading = task.requiresAdmin;
 
           return (
             <div key={task.id} className={`card glass-form shadow-sm ${needsGrading ? 'border-blue-300' : 'border-gray-100'}`}>
@@ -92,7 +92,16 @@ export const GradeSubmissionPage: React.FC = () => {
 
               <div className="bg-gray-50 p-3 rounded-lg mb-4 text-sm font-medium text-gray-700">
                 <div className="mb-1 text-xs text-gray-500 uppercase">Student's Answer:</div>
-                {ans?.answer ? (
+                {ans?.subAnswers && task.subQuestions?.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {task.subQuestions.map((sq: any, sqIndex: number) => (
+                      <div key={sq.id}>
+                        <div className="text-xs text-gray-400 mb-1">Question {sqIndex + 1}</div>
+                        <div>{ans.subAnswers[sq.id] || <span className="text-gray-400 italic">No answer</span>}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : ans?.answer ? (
                   <div>{ans.answer}</div>
                 ) : (
                   <div className="text-gray-400 italic">No answer provided</div>
