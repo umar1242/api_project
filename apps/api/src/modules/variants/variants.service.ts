@@ -58,7 +58,7 @@ export class VariantsService {
       groupId: variant.groupId?.toString(),
       createdAt: variant.createdAt,
       updatedAt: variant.updatedAt,
-      tasks: variant.tasks?.map((task: VariantTask) => ({
+      tasks: variant.tasks?.map((task: any) => ({
         id: task.id.toString(),
         variantId: task.variantId.toString(),
         type: task.type,
@@ -67,6 +67,10 @@ export class VariantsService {
         requiresAttachment: task.requiresAttachment,
         optionsCount: task.optionsCount,
         maxAttachments: task.maxAttachments,
+        subQuestions: task.subQuestions?.map((sq: any) => ({
+          id: sq.id.toString(),
+          orderIndex: sq.orderIndex,
+        })),
       })),
     };
   }
@@ -86,7 +90,7 @@ export class VariantsService {
       groupId: variant.groupId?.toString(),
       createdAt: variant.createdAt,
       updatedAt: variant.updatedAt,
-      tasks: variant.tasks?.map((task: VariantTask) => ({
+      tasks: variant.tasks?.map((task: any) => ({
         id: task.id.toString(),
         variantId: task.variantId.toString(),
         type: task.type,
@@ -96,6 +100,11 @@ export class VariantsService {
         optionsCount: task.optionsCount,
         maxAttachments: task.maxAttachments,
         correctAnswer: task.correctAnswer,
+        subQuestions: task.subQuestions?.map((sq: any) => ({
+          id: sq.id.toString(),
+          orderIndex: sq.orderIndex,
+          correctAnswer: sq.correctAnswer,
+        })),
       })),
     };
   }
@@ -169,12 +178,12 @@ export class VariantsService {
       const groupIds = enrollments.map((e: import("@prisma/client").Enrollment) => e.groupId);
       variants = await this.prisma.variant.findMany({
         where: { OR: [{ groupId: { in: groupIds } }, { groupId: null }] },
-        include: { tasks: true },
+        include: { tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } } },
         orderBy: { createdAt: "desc" },
       });
     } else {
       variants = await this.prisma.variant.findMany({
-        include: { tasks: true },
+        include: { tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } } },
         orderBy: { createdAt: "desc" },
       });
     }
@@ -184,7 +193,7 @@ export class VariantsService {
   async findOne(id: string, telegramId?: bigint) {
     const variant = await this.prisma.variant.findUnique({
       where: { id: BigInt(id) },
-      include: { tasks: true },
+      include: { tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } } },
     });
     if (!variant) throw new NotFoundException("Variant not found");
 
@@ -203,7 +212,7 @@ export class VariantsService {
   async findOneAdmin(id: string) {
     const variant = await this.prisma.variant.findUnique({
       where: { id: BigInt(id) },
-      include: { tasks: true },
+      include: { tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } } },
     });
     if (!variant) throw new NotFoundException("Variant not found");
     return this.mapVariantToAdminDto(variant);
