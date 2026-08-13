@@ -159,11 +159,19 @@ export class VariantsService {
                 ? (task.maxAttachments ?? 4)
                 : null,
               correctAnswer: task.correctAnswer,
+              subQuestions: task.subQuestions?.length
+                ? {
+                    create: task.subQuestions.map((sq) => ({
+                      orderIndex: sq.orderIndex,
+                      correctAnswer: sq.correctAnswer,
+                    })),
+                  }
+                : undefined,
             })) || [],
         },
       },
       include: {
-        tasks: true,
+        tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } },
       },
     });
     return this.mapVariantToAdminDto(variant);
@@ -260,7 +268,10 @@ export class VariantsService {
 
     const variant = await this.prisma.variant.findUnique({
       where: { id: BigInt(variantId) },
-      include: { tasks: true, group: true },
+      include: {
+        tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } },
+        group: true,
+      },
     });
     if (!variant) throw new NotFoundException("Variant not found");
 
@@ -380,7 +391,7 @@ export class VariantsService {
     const sub = await this.prisma.variantSubmission.findUnique({
       where: { id: BigInt(submissionId) },
       include: {
-        variant: { include: { tasks: true } },
+        variant: { include: { tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } } } },
         user: true,
         answers: true,
       },
@@ -397,7 +408,12 @@ export class VariantsService {
       where: { id: BigInt(submissionId) },
       include: {
         answers: true,
-        variant: { include: { tasks: true, group: true } },
+        variant: {
+          include: {
+            tasks: { include: { subQuestions: { orderBy: { orderIndex: 'asc' } } } },
+            group: true,
+          },
+        },
       },
     });
     if (!sub) throw new NotFoundException("Submission not found");
