@@ -157,9 +157,10 @@ export const VariantsPage: React.FC = () => {
       const botUsername = import.meta.env.VITE_CERT_BOT_USERNAME || 'quiz1242bot';
       setShareLink(`https://t.me/${botUsername}?start=variant_${data.id}`);
       setStep(4);
-    } catch (error) {
+    } catch (error: any) {
       WebApp.HapticFeedback.notificationOccurred('error');
-      WebApp.showAlert('Failed to publish variant');
+      const msg = error.response?.data?.message || error.message || 'Unknown error';
+      WebApp.showAlert(`Failed to publish variant: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
     }
   };
 

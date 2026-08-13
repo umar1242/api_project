@@ -87,6 +87,9 @@ export class TelegramAuthGuard implements CanActivate {
     }
 
     if (!isValid || !validUser) {
+      this.logger.warn(
+        `Telegram auth failed. Tried ${tokens.length} token(s). initData length: ${initDataRaw.length}. First 60 chars: ${initDataRaw.slice(0, 60)}`,
+      );
       throw new UnauthorizedException("Invalid Telegram initData signature");
     }
 

@@ -38,7 +38,8 @@ export class ServiceTokenGuard implements CanActivate {
 
     try {
       return this.telegramAuthGuard.canActivate(context);
-    } catch (e) {
+    } catch (e: any) {
+      console.error(`[ServiceTokenGuard] auth failed: ${e.message}. Init data present? ${!!token}`);
       throw new UnauthorizedException(
         "Invalid or missing service token or Telegram auth",
       );
