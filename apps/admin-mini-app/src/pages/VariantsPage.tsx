@@ -113,6 +113,10 @@ export const VariantsPage: React.FC = () => {
   const handleCheckData = () => {
     // Validate if answers are filled
     const missing = tasks.some(t => {
+      if (t.type === 'WRITTEN_WORK' && t.subQuestions?.length > 0) {
+        if (t.requiresAdmin) return false;
+        return t.subQuestions.some((sq: any) => !sq.correctAnswer);
+      }
       if (t.type === 'WRITTEN_WORK' && t.requiresAdmin) return false;
       return !t.correctAnswer;
     });
@@ -139,7 +143,13 @@ export const VariantsPage: React.FC = () => {
           correctAnswer: t.correctAnswer,
           requiresAdmin: t.requiresAdmin,
           requiresAttachment: t.requiresAttachment,
-          maxAttachments: t.requiresAttachment ? (t.maxAttachments || 4) : undefined
+          maxAttachments: t.requiresAttachment ? (t.maxAttachments || 4) : undefined,
+          subQuestions: t.subQuestions?.length
+            ? t.subQuestions.map((sq: any, idx: number) => ({
+                orderIndex: idx + 1,
+                correctAnswer: sq.correctAnswer,
+              }))
+            : undefined,
         }))
       });
       WebApp.HapticFeedback.notificationOccurred('success');
@@ -275,14 +285,78 @@ export const VariantsPage: React.FC = () => {
                       </div>
                     )}
                     
-                    {!task.requiresAdmin && (
-                      <div className="input-group mt-3">
-                        <label className="input-label">Specific Answer</label>
-                        <MathKeyboard
-                          initialLatex={task.correctAnswer || ''}
-                          onLatexChange={(val) => handleTaskChange(i, 'correctAnswer', val)}
-                        />
+                    <label className="flex items-center gap-2 mt-3">
+                      <input
+                        type="checkbox"
+                        className="rounded text-blue-500 focus:ring-blue-500"
+                        checked={(task.subQuestions?.length || 0) > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            handleTaskChange(i, 'subQuestions', [
+                              { orderIndex: 1, correctAnswer: '' },
+                              { orderIndex: 2, correctAnswer: '' },
+                            ]);
+                          } else {
+                            handleTaskChange(i, 'subQuestions', []);
+                          }
+                        }}
+                      />
+                      <span className="text-xs text-gray-600 font-medium">This task has multiple sub-questions (2-6 or more)</span>
+                    </label>
+
+                    {(task.subQuestions?.length || 0) > 0 ? (
+                      <div className="mt-3" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {task.subQuestions.map((sq: any, sqIndex: number) => (
+                          <div key={sqIndex} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-bold text-gray-700">Question {sqIndex + 1}</span>
+                              {task.subQuestions.length > 2 && (
+                                <button
+                                  className="text-xs text-red-500 font-medium"
+                                  onClick={() => {
+                                    const updated = task.subQuestions.filter((_: any, idx: number) => idx !== sqIndex);
+                                    handleTaskChange(i, 'subQuestions', updated);
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                            {!task.requiresAdmin && (
+                              <MathKeyboard
+                                initialLatex={sq.correctAnswer || ''}
+                                onLatexChange={(val) => {
+                                  const updated = [...task.subQuestions];
+                                  updated[sqIndex] = { ...updated[sqIndex], correctAnswer: val };
+                                  handleTaskChange(i, 'subQuestions', updated);
+                                }}
+                              />
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          className="btn btn--secondary btn--full"
+                          style={{ padding: '8px' }}
+                          onClick={() => {
+                            handleTaskChange(i, 'subQuestions', [
+                              ...task.subQuestions,
+                              { orderIndex: task.subQuestions.length + 1, correctAnswer: '' },
+                            ]);
+                          }}
+                        >
+                          + Add sub-question
+                        </button>
                       </div>
+                    ) : (
+                      !task.requiresAdmin && (
+                        <div className="input-group mt-3">
+                          <label className="input-label">Specific Answer</label>
+                          <MathKeyboard
+                            initialLatex={task.correctAnswer || ''}
+                            onLatexChange={(val) => handleTaskChange(i, 'correctAnswer', val)}
+                          />
+                        </div>
+                      )
                     )}
                   </div>
                 )}
