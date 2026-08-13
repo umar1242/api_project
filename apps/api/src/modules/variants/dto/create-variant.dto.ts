@@ -14,6 +14,15 @@ import {
 import { Type } from "class-transformer";
 import { VariantType, TaskType } from "@prisma/client";
 
+export class CreateVariantSubQuestionDto {
+  @IsNumber()
+  orderIndex: number;
+
+  @IsString()
+  @IsOptional()
+  correctAnswer?: string;
+}
+
 export class CreateVariantTaskDto {
   @IsEnum(TaskType)
   type: TaskType;
@@ -42,6 +51,12 @@ export class CreateVariantTaskDto {
   @IsString()
   @IsOptional()
   correctAnswer?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateVariantSubQuestionDto)
+  @IsOptional()
+  subQuestions?: CreateVariantSubQuestionDto[];
 }
 
 export class CreateVariantDto {
