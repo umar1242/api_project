@@ -18,6 +18,9 @@ export class VariantTaskAnswerResponseDto {
   fileUrls?: string[];
 
   @ApiPropertyOptional()
+  subAnswers?: Record<string, string>;
+
+  @ApiPropertyOptional()
   score?: number;
 
   @ApiPropertyOptional()

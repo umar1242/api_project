@@ -1,5 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
+export class VariantSubQuestionResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  orderIndex: number;
+}
+
+export class VariantSubQuestionAdminResponseDto extends VariantSubQuestionResponseDto {
+  @ApiPropertyOptional()
+  correctAnswer?: string;
+}
+
 export class VariantTaskResponseDto {
   @ApiProperty()
   id: string;
@@ -24,11 +37,17 @@ export class VariantTaskResponseDto {
 
   @ApiPropertyOptional()
   maxAttachments?: number;
+
+  @ApiPropertyOptional({ type: () => [VariantSubQuestionResponseDto] })
+  subQuestions?: VariantSubQuestionResponseDto[];
 }
 
 export class VariantTaskAdminResponseDto extends VariantTaskResponseDto {
   @ApiPropertyOptional()
   correctAnswer?: string;
+
+  @ApiPropertyOptional({ type: () => [VariantSubQuestionAdminResponseDto] })
+  subQuestions?: VariantSubQuestionAdminResponseDto[];
 }
 
 export class VariantResponseDto {
