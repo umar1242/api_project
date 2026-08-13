@@ -14,6 +14,7 @@ export const TestTakingPage: React.FC = () => {
   const [test, setTest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [subAnswers, setSubAnswers] = useState<Record<string, Record<string, string>>>({});
   const [fileUrls, setFileUrls] = useState<Record<string, string[]>>({});
   const [uploadingTaskId, setUploadingTaskId] = useState<string | null>(null);
   const [timeLeft] = useState(3600); // 1 hour demo timer
@@ -44,6 +45,14 @@ export const TestTakingPage: React.FC = () => {
   const handleAnswerChange = (taskId: string, answer: string) => {
     WebApp.HapticFeedback.selectionChanged();
     setAnswers(prev => ({ ...prev, [taskId]: answer }));
+  };
+
+  const handleSubAnswerChange = (taskId: string, subQuestionId: string, answer: string) => {
+    WebApp.HapticFeedback.selectionChanged();
+    setSubAnswers(prev => ({
+      ...prev,
+      [taskId]: { ...(prev[taskId] || {}), [subQuestionId]: answer },
+    }));
   };
 
   const handleFileUpload = async (taskId: string, files: FileList | null, limit: number) => {
@@ -90,6 +99,7 @@ export const TestTakingPage: React.FC = () => {
             userId,
             answers,
             fileUrls,
+            subAnswers,
           });
           WebApp.showAlert('Test submitted successfully! Waiting for results...');
           navigate('/tests');
@@ -156,7 +166,23 @@ export const TestTakingPage: React.FC = () => {
               />
             )}
 
-            {task.type === 'WRITTEN_WORK' && (
+            {task.type === 'WRITTEN_WORK' && (task.subQuestions?.length || 0) > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
+                {task.subQuestions.map((sq: any, sqIndex: number) => (
+                  <div key={sq.id} style={{ background: 'var(--tg-secondary-bg, #f5f5f5)', borderRadius: '10px', padding: '10px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', color: 'var(--tg-hint)' }}>
+                      Question {sqIndex + 1}
+                    </div>
+                    <MathKeyboard
+                      initialLatex={subAnswers[task.id]?.[sq.id] || ''}
+                      onLatexChange={(val) => handleSubAnswerChange(task.id, sq.id, val)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {task.type === 'WRITTEN_WORK' && (task.subQuestions?.length || 0) === 0 && (
               <textarea
                 className="form-textarea"
                 style={{ marginTop: '4px', fontSize: '14px' }}
