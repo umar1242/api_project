@@ -1,6 +1,6 @@
 import { BottomNav as SharedBottomNav } from '@shared-ui/core';
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
 import { Loader } from '@shared-ui/core';
@@ -24,6 +24,30 @@ import { EnterCodePage } from './pages/EnterCodePage';
 // Temporary placeholders for pages
 const ProfilePage = () => <div className="page"><div className="card glass-form"><h1>Profile</h1></div></div>;
 
+function AppShell() {
+  const location = useLocation();
+  // Скрываем нижнюю панель навигации на экране прохождения теста —
+  // она перекрывает фиксированную кнопку "Finish Test" внизу экрана.
+  const hideNav = /^\/tests\/[^/]+$/.test(location.pathname);
+
+  return (
+    <div className="app-shell">
+      <main className="app-main">
+        <Routes>
+          <Route path="/" element={<Navigate to="/tests" replace />} />
+          <Route path="/tests" element={<TestsPage />} />
+          <Route path="/tests/:id" element={<TestTakingPage />} />
+          <Route path="/enter-code" element={<EnterCodePage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="*" element={<Navigate to="/tests" replace />} />
+        </Routes>
+      </main>
+      {!hideNav && <BottomNav />}
+    </div>
+  );
+}
+
 function App() {
   const { isLoading } = useTelegramUser();
 
@@ -39,20 +63,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-shell">
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={<Navigate to="/tests" replace />} />
-            <Route path="/tests" element={<TestsPage />} />
-            <Route path="/tests/:id" element={<TestTakingPage />} />
-            <Route path="/enter-code" element={<EnterCodePage />} />
-            <Route path="/leaderboard" element={<LeaderboardPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="*" element={<Navigate to="/tests" replace />} />
-          </Routes>
-        </main>
-        <BottomNav />
-      </div>
+      <AppShell />
     </BrowserRouter>
   );
 }
