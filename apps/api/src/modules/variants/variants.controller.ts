@@ -45,14 +45,23 @@ export class VariantsController {
     return this.variantsService.findPendingSubmissions();
   }
 
+  @ApiOperation({ summary: "Get my own submission history" })
+  @Get("submissions/mine")
+  getMySubmissions(@Req() req: any) {
+    return this.variantsService.findMySubmissions(BigInt(req.telegramUser?.id));
+  }
+
   @ApiOperation({ summary: "Get a specific submission" })
   @ApiResponse({ status: 200, type: VariantSubmissionResponseDto })
-  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @Get("submissions/:submissionId")
   getSubmission(
     @Param("submissionId") submissionId: string,
+    @Req() req: any,
   ): Promise<VariantSubmissionResponseDto> {
-    return this.variantsService.findSubmission(submissionId);
+    return this.variantsService.findSubmission(
+      submissionId,
+      req.telegramUser?.id ? BigInt(req.telegramUser.id) : undefined,
+    );
   }
 
   @ApiOperation({ summary: "Grade a submission" })

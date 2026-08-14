@@ -458,7 +458,7 @@ export class VariantsService {
     return submissions.map((s: VariantSubmission & { variant: Variant, user: User }) => this.mapSubmissionToDto(s));
   }
 
-  async findSubmission(submissionId: string) {
+  async findSubmission(submissionId: string, telegramId?: bigint) {
     const sub = await this.prisma.variantSubmission.findUnique({
       where: { id: BigInt(submissionId) },
       include: {
@@ -468,7 +468,37 @@ export class VariantsService {
       },
     });
     if (!sub) throw new NotFoundException("Submission not found");
+
+    if (telegramId) {
+      const caller = await this.prisma.user.findUnique({ where: { telegramId } });
+      if (!caller) throw new ForbiddenException("User not found");
+      const isPrivileged = caller.role === "ADMIN" || caller.role === "CURATOR";
+      if (!isPrivileged && sub.userId !== caller.id) {
+        throw new ForbiddenException("Cannot view another user's submission");
+      }
+    }
+
     return this.mapSubmissionToDto(sub);
+  }
+
+  async findMySubmissions(telegramId: bigint) {
+    const caller = await this.prisma.user.findUnique({ where: { telegramId } });
+    if (!caller) throw new NotFoundException("User not found");
+
+    const submissions = await this.prisma.variantSubmission.findMany({
+      where: { userId: caller.id },
+      include: { variant: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return submissions.map((s) => ({
+      id: s.id.toString(),
+      variantId: s.variantId.toString(),
+      variantTitle: s.variant.title,
+      totalScore: s.totalScore,
+      status: s.status,
+      createdAt: s.createdAt,
+    }));
   }
 
   async gradeSubmission(
