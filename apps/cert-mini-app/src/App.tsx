@@ -21,9 +21,9 @@ import { TestTakingPage } from './pages/TestTakingPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { EnterCodePage } from './pages/EnterCodePage';
 import { SubmissionResultPage } from './pages/SubmissionResultPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 // Temporary placeholders for pages
-const ProfilePage = () => <div className="page"><div className="card glass-form"><h1>Profile</h1></div></div>;
 
 function AppShell() {
   const location = useLocation();
