@@ -20,6 +20,7 @@ import { TestsPage } from './pages/TestsPage';
 import { TestTakingPage } from './pages/TestTakingPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { EnterCodePage } from './pages/EnterCodePage';
+import { SubmissionResultPage } from './pages/SubmissionResultPage';
 
 // Temporary placeholders for pages
 const ProfilePage = () => <div className="page"><div className="card glass-form"><h1>Profile</h1></div></div>;
@@ -28,7 +29,7 @@ function AppShell() {
   const location = useLocation();
   // Скрываем нижнюю панель навигации на экране прохождения теста —
   // она перекрывает фиксированную кнопку "Finish Test" внизу экрана.
-  const hideNav = /^\/tests\/[^/]+$/.test(location.pathname);
+  const hideNav = /^\/tests\/[^/]+$/.test(location.pathname) || /^\/results\/[^/]+$/.test(location.pathname);
 
   return (
     <div className="app-shell">
@@ -38,6 +39,7 @@ function AppShell() {
           <Route path="/tests" element={<TestsPage />} />
           <Route path="/tests/:id" element={<TestTakingPage />} />
           <Route path="/enter-code" element={<EnterCodePage />} />
+          <Route path="/results/:id" element={<SubmissionResultPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/tests" replace />} />
