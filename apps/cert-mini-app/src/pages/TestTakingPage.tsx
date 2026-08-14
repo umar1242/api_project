@@ -8,16 +8,36 @@ import { MathKeyboard } from '../components/MathKeyboard';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
 
+const loadTestDraft = (testId: string | undefined): any => {
+  if (!testId) return {};
+  try {
+    const raw = localStorage.getItem(`test_draft_${testId}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
 export const TestTakingPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [test, setTest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [subAnswers, setSubAnswers] = useState<Record<string, Record<string, string>>>({});
-  const [fileUrls, setFileUrls] = useState<Record<string, string[]>>({});
+  const initialDraft = loadTestDraft(id);
+  const [answers, setAnswers] = useState<Record<string, string>>(initialDraft.answers || {});
+  const [subAnswers, setSubAnswers] = useState<Record<string, Record<string, string>>>(initialDraft.subAnswers || {});
+  const [fileUrls, setFileUrls] = useState<Record<string, string[]>>(initialDraft.fileUrls || {});
   const [uploadingTaskId, setUploadingTaskId] = useState<string | null>(null);
   const [timeLeft] = useState(3600); // 1 hour demo timer
+
+  useEffect(() => {
+    if (!id) return;
+    try {
+      localStorage.setItem(`test_draft_${id}`, JSON.stringify({ answers, subAnswers, fileUrls }));
+    } catch {
+      // localStorage недоступен/переполнен — пропускаем молча
+    }
+  }, [id, answers, subAnswers, fileUrls]);
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -102,6 +122,7 @@ export const TestTakingPage: React.FC = () => {
             subAnswers,
           });
           WebApp.showAlert('Test submitted successfully! Waiting for results...');
+          if (id) localStorage.removeItem(`test_draft_${id}`);
           navigate('/tests');
         } catch (error) {
           WebApp.HapticFeedback.notificationOccurred('error');
