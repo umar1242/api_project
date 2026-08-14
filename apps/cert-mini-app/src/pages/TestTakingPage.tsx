@@ -114,14 +114,13 @@ export const TestTakingPage: React.FC = () => {
     WebApp.showConfirm('Are you sure you want to finish the test?', async (confirm: boolean) => {
       if(confirm) {
         try {
-          await apiClient.post(`/variants/${id}/submissions`, {
+          const { data: submission } = await apiClient.post(`/variants/${id}/submissions`, {
             answers,
             fileUrls,
             subAnswers,
           });
-          WebApp.showAlert('Test submitted successfully! Waiting for results...');
           if (id) localStorage.removeItem(`test_draft_${id}`);
-          navigate('/tests');
+          navigate(`/results/${submission.id}`);
         } catch (error) {
           WebApp.HapticFeedback.notificationOccurred('error');
           WebApp.showAlert('Failed to submit test. Try again.');
