@@ -114,9 +114,7 @@ export const TestTakingPage: React.FC = () => {
     WebApp.showConfirm('Are you sure you want to finish the test?', async (confirm: boolean) => {
       if(confirm) {
         try {
-          const userId = WebApp.initDataUnsafe?.user?.id?.toString() || '12345'; // mock user for demo
           await apiClient.post(`/variants/${id}/submissions`, {
-            userId,
             answers,
             fileUrls,
             subAnswers,
