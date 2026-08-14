@@ -305,6 +305,12 @@ export class VariantsService {
       data.userId = u.id.toString();
     }
 
+    if (!data.userId) {
+      throw new BadRequestException(
+        "userId is required when submitting without Telegram authentication",
+      );
+    }
+
     const variant = await this.prisma.variant.findUnique({
       where: { id: BigInt(variantId) },
       include: {
