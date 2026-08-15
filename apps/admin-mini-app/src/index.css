@@ -975,3 +975,136 @@ button {
 .interactive-card:active {
   transform: scale(0.98);
 }
+
+/* ── Modal Overlay & Dialog (Portal) ─────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  animation: modal-fade-in 0.2s ease-out forwards;
+}
+
+@media (min-width: 640px) {
+  .modal-overlay {
+    align-items: center;
+    padding: var(--space-4);
+  }
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-dialog {
+  background: var(--tg-bg);
+  width: 100%;
+  max-width: 540px;
+  max-height: 85vh;
+  max-height: 85dvh;
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+  animation: modal-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  position: relative;
+  z-index: 10000;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .modal-dialog {
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@keyframes modal-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--tg-secondary);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--tg-text);
+}
+
+.modal-close-btn {
+  padding: 6px;
+  border-radius: var(--radius-md);
+  color: var(--tg-hint);
+  background: var(--tg-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-smooth);
+}
+
+.modal-close-btn:hover {
+  background: #E2E8F0;
+  color: var(--tg-text);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-footer {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  margin-top: var(--space-2);
+  border-top: 1px solid var(--tg-secondary);
+  flex-shrink: 0;
+}
+
+.space-y-1 > * + * { margin-top: 4px; }
+.space-y-2 > * + * { margin-top: 8px; }
+.space-y-3 > * + * { margin-top: 12px; }
+.space-y-4 > * + * { margin-top: 16px; }
+
+.hidden { display: none !important; }
+.block { display: block; }
+.bg-white { background-color: #FFFFFF; }
+.text-gray-900 { color: #0F172A; }
+.text-gray-600 { color: #475569; }
+.border-t { border-top: 1px solid var(--tg-secondary); }
+.border-b { border-bottom: 1px solid var(--tg-secondary); }
+

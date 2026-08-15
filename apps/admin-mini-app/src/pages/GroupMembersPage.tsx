@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, CheckCircle, Clock, Ban, Award, Phone, Send, Search, ChevronDown, ChevronUp, DollarSign } from 'lucide-react';
+import { ArrowLeft, Users, Phone, Search, ChevronDown, ChevronUp, DollarSign } from 'lucide-react';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
 import { apiClient } from '../api/client';

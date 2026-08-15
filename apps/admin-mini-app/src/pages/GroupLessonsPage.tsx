@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Plus, Calendar, Clock, Video, Film, Edit, Trash2, ExternalLink, X, Check } from 'lucide-react';
 import WebAppModule from "@twa-dev/sdk";
@@ -39,6 +40,18 @@ export const GroupLessonsPage: React.FC = () => {
   const [startsAt, setStartsAt] = useState('');
   const [durationMin, setDurationMin] = useState(60);
   const [meetingUrl, setMeetingUrl] = useState('');
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isModalOpen]);
 
   const fetchData = async () => {
     if (!groupId) return;
@@ -122,6 +135,12 @@ export const GroupLessonsPage: React.FC = () => {
     if (!title.trim()) return alert('Please enter lesson title');
     if (!startsAt) return alert('Please select date and time');
 
+    if (!WebApp.initData) {
+      WebApp.HapticFeedback?.notificationOccurred('error');
+      alert('Сессия Telegram истекла или приложение открыто вне Telegram. Пожалуйста, откройте мини-апп через кнопку бота в Telegram.');
+      return;
+    }
+
     try {
       setSaving(true);
       WebApp.HapticFeedback?.impactOccurred('medium');
@@ -153,7 +172,12 @@ export const GroupLessonsPage: React.FC = () => {
     } catch (err: any) {
       console.error('Failed to save lesson:', err);
       WebApp.HapticFeedback?.notificationOccurred('error');
-      alert(err.response?.data?.message || 'Failed to save lesson');
+      if (err.response?.status === 401) {
+        alert('Сессия Telegram истекла (прошло более 1 часа). Пожалуйста, закройте и снова откройте мини-апп через бота.');
+      } else {
+        const errorMsg = err.response?.data?.message || err.message || 'Failed to save lesson';
+        alert(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      }
     } finally {
       setSaving(false);
     }
@@ -347,25 +371,30 @@ export const GroupLessonsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Create / Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-4 max-h-[90vh] overflow-y-auto space-y-4 shadow-xl animate-in slide-in-from-bottom duration-200">
+      {/* Create / Edit Modal via Portal */}
+      {isModalOpen && createPortal(
+        <div
+          className="modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+        >
+          <div className="modal-dialog">
             {/* Modal Header */}
-            <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-              <h2 className="font-bold text-lg text-gray-900">
+            <div className="modal-header">
+              <h2 className="modal-title">
                 {editingLessonId ? 'Edit Lesson' : 'Create New Lesson'}
               </h2>
               <button
+                type="button"
                 onClick={closeModal}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                className="modal-close-btn"
+                aria-label="Close modal"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSubmit} className="space-y-3 text-sm">
+            <form onSubmit={handleSubmit} className="modal-body">
               {/* Title */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -491,7 +520,7 @@ export const GroupLessonsPage: React.FC = () => {
               </div>
 
               {/* Form Buttons */}
-              <div className="flex gap-2 pt-3 border-t border-gray-100">
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={closeModal}
@@ -510,7 +539,8 @@ export const GroupLessonsPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
