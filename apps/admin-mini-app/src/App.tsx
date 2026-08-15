@@ -42,6 +42,9 @@ import { EditVariantAnswersPage } from './pages/EditVariantAnswersPage';
 
 import { CoursesPage } from './pages/CoursesPage';
 import { GroupsPage } from './pages/GroupsPage';
+import { GroupMembersPage } from './pages/GroupMembersPage';
+import { GroupLessonsPage } from './pages/GroupLessonsPage';
+import { GroupMaterialsPage } from './pages/GroupMaterialsPage';
 
 // Temporary placeholders for pages
 const DashboardPage = () => (
@@ -80,6 +83,9 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/groups" element={<GroupsPage />} />
+            <Route path="/groups/:groupId/members" element={<GroupMembersPage />} />
+            <Route path="/groups/:groupId/lessons" element={<GroupLessonsPage />} />
+            <Route path="/groups/:groupId/materials" element={<GroupMaterialsPage />} />
             <Route path="/variants" element={<VariantsPage />} />
             <Route path="/variants/:id/edit" element={<EditVariantAnswersPage />} />
             <Route path="/submissions" element={<SubmissionsPage />} />

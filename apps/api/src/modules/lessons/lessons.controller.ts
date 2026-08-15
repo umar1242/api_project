@@ -24,10 +24,14 @@ import { CreateLessonDto } from "./dto/create-lesson.dto";
 import { UpdateLessonDto } from "./dto/update-lesson.dto";
 import { LessonResponseDto } from "./dto/lesson-response.dto";
 import { ServiceTokenGuard } from "../../common/guards/service-token.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "@prisma/client";
 
 @ApiTags("Lessons")
 @ApiSecurity("service-token")
-@UseGuards(ServiceTokenGuard)
+@UseGuards(ServiceTokenGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.CURATOR)
 @Controller("lessons")
 export class LessonsController {
   constructor(private readonly lessonsService: LessonsService) {}

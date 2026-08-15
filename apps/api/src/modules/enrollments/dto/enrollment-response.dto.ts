@@ -1,5 +1,28 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { EnrollmentStatus } from "@prisma/client";
+
+export class EnrollmentUserDto {
+  @ApiProperty({ description: "User ID", type: String })
+  id: string;
+
+  @ApiProperty({ description: "Telegram ID", type: String })
+  telegramId: string;
+
+  @ApiProperty({ description: "Full Name" })
+  fullName: string;
+
+  @ApiPropertyOptional({ description: "Phone number" })
+  phone?: string;
+
+  @ApiProperty({ description: "User role" })
+  role: string;
+
+  @ApiProperty({ description: "User status" })
+  status: string;
+
+  @ApiProperty({ description: "XP points" })
+  xp: number;
+}
 
 export class EnrollmentResponseDto {
   @ApiProperty({ description: "The unique enrollment ID", type: String })
@@ -14,20 +37,25 @@ export class EnrollmentResponseDto {
   @ApiProperty({ description: "Enrollment status", enum: EnrollmentStatus })
   status: EnrollmentStatus;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: "When payment is due (for paid courses)",
-    required: false,
   })
   paymentDueAt?: Date;
 
-  @ApiProperty({ description: "When payment was confirmed", required: false })
+  @ApiPropertyOptional({ description: "When payment was confirmed" })
   paymentPaidAt?: Date;
 
-  @ApiProperty({ description: "Flexible additional metadata", required: false })
+  @ApiPropertyOptional({ description: "Flexible additional metadata" })
   metadata?: Record<string, any>;
 
-  @ApiProperty({ description: "Telegram chat invite link", required: false })
+  @ApiPropertyOptional({ description: "Telegram chat invite link" })
   inviteLink?: string;
+
+  @ApiPropertyOptional({
+    type: () => EnrollmentUserDto,
+    description: "Enrolled user info",
+  })
+  user?: EnrollmentUserDto;
 
   @ApiProperty({ description: "Creation timestamp" })
   createdAt: Date;

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
@@ -75,32 +76,39 @@ export class EnrollmentsService {
       this.logger.log(`User ${user.id} enrolled in group ${group.id}`);
 
       let inviteLink: string | undefined = undefined;
+      const registrarToken = process.env.REGISTRAR_BOT_TOKEN;
 
-      try {
-        const registrarToken = process.env.REGISTRAR_BOT_TOKEN;
-        if (registrarToken && group.telegramChatId) {
-          const res = await fetch(
-            `https://api.telegram.org/bot${registrarToken}/createChatInviteLink`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: group.telegramChatId.toString(),
-                member_limit: 1, // specific to this user
-              }),
-            },
-          );
-          const data = await res.json();
-          if (data.ok && data.result?.invite_link) {
-            inviteLink = data.result.invite_link;
-          } else {
-            this.logger.warn(
-              `Failed to generate invite link: ${JSON.stringify(data)}`,
+      if (registrarToken && group.telegramChatId) {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const res = await fetch(
+              `https://api.telegram.org/bot${registrarToken}/createChatInviteLink`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: group.telegramChatId.toString(),
+                  member_limit: 1,
+                }),
+              },
             );
+            const data = await res.json();
+            if (data.ok && data.result?.invite_link) {
+              inviteLink = data.result.invite_link;
+              break;
+            } else {
+              this.logger.warn(
+                `Failed to generate invite link (attempt ${attempt}): ${JSON.stringify(data)}`,
+              );
+            }
+          } catch (e) {
+            this.logger.error(
+              `Error creating chat invite link (attempt ${attempt})`,
+              e,
+            );
+            if (attempt < 2) await new Promise((r) => setTimeout(r, 1000));
           }
         }
-      } catch (e) {
-        this.logger.error("Error creating chat invite link", e);
       }
 
       return new EnrollmentResponseDto({
@@ -124,6 +132,72 @@ export class EnrollmentsService {
       }
       throw err;
     }
+  }
+
+  async getInviteLink(
+    id: string,
+    telegramUser: any,
+  ): Promise<{ inviteLink: string }> {
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { id: BigInt(id) },
+      include: {
+        group: true,
+        user: true,
+      },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException(`Enrollment with ID ${id} not found`);
+    }
+
+    if (enrollment.user.telegramId !== BigInt(telegramUser.id)) {
+      throw new ForbiddenException(
+        "You are not allowed to access this enrollment",
+      );
+    }
+
+    if (!enrollment.group.telegramChatId) {
+      throw new NotFoundException("Telegram group not found for this course");
+    }
+
+    const registrarToken = process.env.REGISTRAR_BOT_TOKEN;
+    if (!registrarToken) {
+      throw new Error("REGISTRAR_BOT_TOKEN not configured");
+    }
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const res = await fetch(
+          `https://api.telegram.org/bot${registrarToken}/createChatInviteLink`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: enrollment.group.telegramChatId.toString(),
+              member_limit: 1,
+            }),
+          },
+        );
+        const data = await res.json();
+        if (data.ok && data.result?.invite_link) {
+          return { inviteLink: data.result.invite_link };
+        } else {
+          this.logger.warn(
+            `Failed to generate invite link (attempt ${attempt}): ${JSON.stringify(data)}`,
+          );
+        }
+      } catch (e) {
+        this.logger.error(
+          `Error creating chat invite link (attempt ${attempt})`,
+          e,
+        );
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
+
+    throw new Error(
+      "Failed to generate Telegram invite link. Please try again.",
+    );
   }
 
   async updateStatus(

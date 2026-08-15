@@ -6,6 +6,7 @@ import {
 import { PrismaService } from "../../database/prisma.service";
 import { CreateGroupDto } from "./dto/create-group.dto";
 import { GroupResponseDto } from "./dto/group-response.dto";
+import { EnrollmentResponseDto } from "../enrollments/dto/enrollment-response.dto";
 
 @Injectable()
 export class GroupsService {
@@ -146,5 +147,53 @@ export class GroupsService {
       courseId: group.courseId?.toString(),
       telegramChatId: group.telegramChatId.toString(),
     });
+  }
+
+  async findEnrollmentsByGroupId(
+    groupIdStr: string,
+  ): Promise<EnrollmentResponseDto[]> {
+    const groupId = BigInt(groupIdStr);
+
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new NotFoundException(`Group with id ${groupIdStr} not found`);
+    }
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { groupId },
+      include: {
+        user: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return enrollments.map(
+      (e: any) =>
+        new EnrollmentResponseDto({
+          id: e.id.toString(),
+          userId: e.userId.toString(),
+          groupId: e.groupId.toString(),
+          status: e.status,
+          paymentDueAt: e.paymentDueAt || undefined,
+          paymentPaidAt: e.paymentPaidAt || undefined,
+          metadata: e.metadata ? (e.metadata as any) : undefined,
+          createdAt: e.createdAt,
+          updatedAt: e.updatedAt,
+          user: e.user
+            ? {
+                id: e.user.id.toString(),
+                telegramId: e.user.telegramId.toString(),
+                fullName: e.user.fullName,
+                phone: e.user.phone || undefined,
+                role: e.user.role,
+                status: e.user.status,
+                xp: e.user.xp,
+              }
+            : undefined,
+        }),
+    );
   }
 }

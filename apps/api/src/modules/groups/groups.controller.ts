@@ -18,7 +18,11 @@ import {
 import { GroupsService } from "./groups.service";
 import { CreateGroupDto } from "./dto/create-group.dto";
 import { GroupResponseDto } from "./dto/group-response.dto";
+import { EnrollmentResponseDto } from "../enrollments/dto/enrollment-response.dto";
 import { ServiceTokenGuard } from "../../common/guards/service-token.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "@prisma/client";
 import { AuditService } from "../audit/audit.service";
 import { Req } from "@nestjs/common";
 
@@ -75,6 +79,25 @@ export class GroupsController {
       return this.groupsService.findAllByCourseId(courseId);
     }
     return this.groupsService.findAll();
+  }
+
+  @ApiOperation({ summary: "Get all enrollments for a group" })
+  @ApiResponse({
+    status: 200,
+    description: "List of enrollments in this group",
+    type: [EnrollmentResponseDto],
+  })
+  @ApiHeader({
+    name: "x-service-token",
+    description: "Service authentication token",
+  })
+  @UseGuards(ServiceTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
+  @Get(":id/enrollments")
+  async getEnrollments(
+    @Param("id") id: string,
+  ): Promise<EnrollmentResponseDto[]> {
+    return this.groupsService.findEnrollmentsByGroupId(id);
   }
 
   @ApiOperation({ summary: "Link group to course" })

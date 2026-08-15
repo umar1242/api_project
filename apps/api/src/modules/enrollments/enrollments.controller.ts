@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Patch,
   Body,
@@ -16,8 +17,10 @@ import {
   TelegramUser,
 } from "../../common/guards/telegram-auth.guard";
 import { ServiceTokenGuard } from "../../common/guards/service-token.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
 import { Request } from "express";
-import { EnrollmentStatus } from "@prisma/client";
+import { EnrollmentStatus, UserRole } from "@prisma/client";
 import { AuditService } from "../audit/audit.service";
 
 @ApiTags("Enrollments")
@@ -49,13 +52,31 @@ export class EnrollmentsController {
     );
   }
 
+  @ApiOperation({
+    summary: "Get or regenerate group invite link for enrollment",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Invite link successfully generated",
+  })
+  @ApiHeader({ name: "tg-init-data", description: "Telegram Web App initData" })
+  @UseGuards(TelegramAuthGuard)
+  @Get(":id/invite-link")
+  async getInviteLink(
+    @Param("id") id: string,
+    @Req() request: Request & { telegramUser?: TelegramUser },
+  ): Promise<{ inviteLink: string }> {
+    return this.enrollmentsService.getInviteLink(id, request.telegramUser!);
+  }
+
   @ApiOperation({ summary: "Update enrollment status" })
   @ApiResponse({ status: 200, type: EnrollmentResponseDto })
   @ApiHeader({
     name: "x-service-token",
     description: "Service authentication token",
   })
-  @UseGuards(ServiceTokenGuard)
+  @UseGuards(ServiceTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch(":id/status")
   async updateStatus(
     @Req() req: any,
@@ -82,7 +103,8 @@ export class EnrollmentsController {
     name: "x-service-token",
     description: "Service authentication token",
   })
-  @UseGuards(ServiceTokenGuard)
+  @UseGuards(ServiceTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch(":id/payment")
   async confirmPayment(
     @Req() req: any,
@@ -102,3 +124,4 @@ export class EnrollmentsController {
     return enrollment;
   }
 }
+

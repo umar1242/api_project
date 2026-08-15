@@ -83,6 +83,19 @@ export class MaterialsService {
     }
   }
 
+  async findAllByGroup(groupId: bigint): Promise<MaterialResponseDto[]> {
+    const materials = await this.prisma.material.findMany({
+      where: { groupId },
+      orderBy: { createdAt: "desc" },
+      include: { lesson: true },
+    });
+
+    return materials.map(
+      (m: Prisma.MaterialGetPayload<{ include: { lesson: true } }>) =>
+        this.mapToDto(m),
+    );
+  }
+
   async findAllByGroupForStudent(
     groupId: bigint,
     telegramId: bigint,

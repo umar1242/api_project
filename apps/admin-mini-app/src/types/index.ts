@@ -31,6 +31,7 @@ export interface Material {
   publishAt: string | null;
   createdAt: string;
   updatedAt: string;
+  lesson?: Lesson;
 }
 
 export interface UserProfile {
@@ -51,7 +52,18 @@ export interface Enrollment {
   status: 'ACTIVE' | 'PAUSED' | 'EXCLUDED' | 'COMPLETED';
   paymentDueAt: string | null;
   paymentPaidAt: string | null;
+  metadata?: Record<string, any> | null;
   createdAt: string;
+  updatedAt?: string;
+  user?: {
+    id: string;
+    telegramId: string;
+    fullName: string;
+    phone?: string | null;
+    role?: string;
+    status?: string;
+    xp?: number;
+  };
   group?: {
     id: string;
     title: string;

@@ -25,12 +25,16 @@ import { CreateMaterialDto } from "./dto/create-material.dto";
 import { UpdateMaterialDto } from "./dto/update-material.dto";
 import { MaterialResponseDto } from "./dto/material-response.dto";
 import { ServiceTokenGuard } from "../../common/guards/service-token.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "@prisma/client";
 import { AuditService } from "../audit/audit.service";
 import { Req } from "@nestjs/common";
 
 @ApiTags("Materials")
 @ApiSecurity("service-token")
-@UseGuards(ServiceTokenGuard)
+@UseGuards(ServiceTokenGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.CURATOR)
 @Controller("materials")
 export class MaterialsController {
   constructor(
@@ -81,20 +85,22 @@ export class MaterialsController {
   }
 
   @Get("group/:groupId")
-  @ApiOperation({ summary: "Get materials for a group (Student access logic)" })
-  @ApiQuery({ name: "telegramId", required: true, type: String })
+  @ApiOperation({
+    summary: "Get materials for a group (all materials for admins/curators, or filtered for student if telegramId is provided)",
+  })
+  @ApiQuery({ name: "telegramId", required: false, type: String })
   @ApiResponse({ status: 200, type: [MaterialResponseDto] })
-  async findAllByGroupForStudent(
+  async findAllByGroup(
     @Param("groupId", ParseIntPipe) groupId: number,
-    @Query("telegramId") telegramId: string,
+    @Query("telegramId") telegramId?: string,
   ): Promise<MaterialResponseDto[]> {
-    if (!telegramId) {
-      throw new BadRequestException("telegramId query param is required");
+    if (telegramId) {
+      return this.materialsService.findAllByGroupForStudent(
+        BigInt(groupId),
+        BigInt(telegramId),
+      );
     }
-    return this.materialsService.findAllByGroupForStudent(
-      BigInt(groupId),
-      BigInt(telegramId),
-    );
+    return this.materialsService.findAllByGroup(BigInt(groupId));
   }
 
   @Get(":id")

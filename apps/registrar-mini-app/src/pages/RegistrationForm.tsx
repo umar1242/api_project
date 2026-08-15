@@ -24,6 +24,10 @@ export const RegistrationForm: React.FC = () => {
   const [courseLoading, setCourseLoading] = useState(true);
   const [courseError, setCourseError] = useState(false);
   
+  const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
+  const [isRetryingInvite, setIsRetryingInvite] = useState(false);
+  const [inviteError, setInviteError] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -81,6 +85,8 @@ export const RegistrationForm: React.FC = () => {
       if (res.data?.inviteLink) {
         setInviteLink(res.data.inviteLink);
       }
+      setEnrollmentId(res.data?.id || null);
+
       setIsSuccess(true);
       WebApp.HapticFeedback?.notificationOccurred('success');
     } catch (err: any) {
@@ -89,6 +95,25 @@ export const RegistrationForm: React.FC = () => {
       setError(err.response?.data?.message || 'Failed to register. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const retryInviteLink = async () => {
+    if (!enrollmentId) return;
+    try {
+      setIsRetryingInvite(true);
+      setInviteError(false);
+      WebApp.HapticFeedback?.impactOccurred('light');
+      const res = await apiClient.get(`/enrollments/${enrollmentId}/invite-link`);
+      if (res.data?.inviteLink) {
+        setInviteLink(res.data.inviteLink);
+        WebApp.HapticFeedback?.notificationOccurred('success');
+      }
+    } catch (err) {
+      setInviteError(true);
+      WebApp.HapticFeedback?.notificationOccurred('error');
+    } finally {
+      setIsRetryingInvite(false);
     }
   };
 
@@ -118,9 +143,21 @@ export const RegistrationForm: React.FC = () => {
               </a>
             </div>
           ) : (
-            <button className="btn btn--primary btn--full mt-4" onClick={() => WebApp.close()}>
-              Close Mini App
-            </button>
+            <div className="w-full flex flex-col gap-3 mt-4">
+              {inviteError && (
+                <p className="text-xs text-red-600 font-semibold text-center">Failed to get invite link. Please try again.</p>
+              )}
+              <button
+                className="btn btn--primary btn--full"
+                onClick={retryInviteLink}
+                disabled={isRetryingInvite}
+              >
+                {isRetryingInvite ? 'Getting link...' : 'Get Group Invite Link'}
+              </button>
+              <button className="btn btn--secondary btn--full" onClick={() => WebApp.close()}>
+                Close Mini App
+              </button>
+            </div>
           )}
         </div>
       </div>

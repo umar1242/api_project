@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, BookOpen, FileText } from 'lucide-react';
 import { apiClient } from '../api/client';
 
 interface Group {
@@ -20,6 +21,7 @@ interface Course {
 }
 
 export const GroupsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +136,31 @@ export const GroupsPage: React.FC = () => {
                   )}
                 </div>
               )}
+
+              {/* Action Buttons: Members, Lessons & Materials */}
+              <div className="pt-2 border-t border-gray-100 flex gap-1.5">
+                <button
+                  onClick={() => navigate(`/groups/${group.id}/members`)}
+                  className="flex-1 btn btn--secondary flex items-center justify-center gap-1 py-1.5 text-xs font-semibold"
+                >
+                  <Users size={14} />
+                  <span>Members</span>
+                </button>
+                <button
+                  onClick={() => navigate(`/groups/${group.id}/lessons`)}
+                  className="flex-1 btn btn--secondary flex items-center justify-center gap-1 py-1.5 text-xs font-semibold"
+                >
+                  <BookOpen size={14} />
+                  <span>Lessons</span>
+                </button>
+                <button
+                  onClick={() => navigate(`/groups/${group.id}/materials`)}
+                  className="flex-1 btn btn--secondary flex items-center justify-center gap-1 py-1.5 text-xs font-semibold"
+                >
+                  <FileText size={14} />
+                  <span>Materials</span>
+                </button>
+              </div>
             </div>
           ))
         )}
