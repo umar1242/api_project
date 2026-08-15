@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { useSearchParams } from 'react-router-dom';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, UserPlus, Loader2 } from 'lucide-react';
 import { apiClient } from '../api';
 
 const registrationSchema = z.object({
@@ -42,13 +42,14 @@ export const RegistrationForm: React.FC = () => {
 
   const onSubmit = async (data: RegistrationFormData) => {
     if (!refLink) {
-      setError('Invalid referral link. Please use the link provided by the bot.');
+      setError('Invalid referral link. Please open this page via your bot enrollment link.');
       return;
     }
 
     try {
       setIsSubmitting(true);
       setError(null);
+      WebApp.HapticFeedback?.impactOccurred('medium');
       
       const res = await apiClient.post('/enrollments', {
         refLink,
@@ -67,8 +68,10 @@ export const RegistrationForm: React.FC = () => {
         setInviteLink(res.data.inviteLink);
       }
       setIsSuccess(true);
+      WebApp.HapticFeedback?.notificationOccurred('success');
     } catch (err: any) {
       console.error(err);
+      WebApp.HapticFeedback?.notificationOccurred('error');
       setError(err.response?.data?.message || 'Failed to register. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -77,123 +80,135 @@ export const RegistrationForm: React.FC = () => {
 
   if (isSuccess) {
     return (
-      <div className="success-container">
-        <CheckCircle2 className="success-icon" />
-        <h2 className="page-title">Registration Successful!</h2>
-        <p className="page-subtitle">
-          You are now enrolled in the course.
-        </p>
-        
-        {inviteLink ? (
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            <p style={{ marginBottom: '10px' }}>Join the private group to continue:</p>
-            <a 
-              href={inviteLink} 
-              target="_blank" 
-              rel="noreferrer"
-              className="btn btn--primary btn--full glass-btn" 
-              style={{ display: 'block', textDecoration: 'none' }}
-              onClick={() => {
-                setTimeout(() => WebApp.close(), 1000);
-              }}
-            >
-              Join Group
-            </a>
-          </div>
-        ) : (
-          <button className="btn btn--primary btn--full glass-btn" onClick={() => WebApp.close()}>
-            Close
-          </button>
-        )}
+      <div className="app-container">
+        <div className="success-container">
+          <CheckCircle2 className="success-icon" />
+          <h2 className="page-title gradient-text">Registration Successful!</h2>
+          <p className="page-subtitle">
+            You are now enrolled in the course.
+          </p>
+          
+          {inviteLink ? (
+            <div className="w-full flex flex-col gap-3 mt-4">
+              <p className="text-sm font-semibold text-gray-700">Join the private group to continue:</p>
+              <a 
+                href={inviteLink} 
+                target="_blank" 
+                rel="noreferrer"
+                className="btn btn--primary btn--full"
+                onClick={() => {
+                  setTimeout(() => WebApp.close(), 1000);
+                }}
+              >
+                Join Telegram Group
+              </a>
+            </div>
+          ) : (
+            <button className="btn btn--primary btn--full mt-4" onClick={() => WebApp.close()}>
+              Close Mini App
+            </button>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="card">
-      <h1 className="page-title">Course Registration</h1>
-      <p className="page-subtitle">Please fill out the details below to enroll</p>
-
-      {error && (
-        <div style={{ backgroundColor: 'rgba(255,59,48,0.1)', padding: '12px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', color: 'var(--tg-theme-destructive-text-color)' }}>
-          <AlertCircle size={20} style={{ marginRight: '8px' }} />
-          <span>{error}</span>
+    <div className="app-container">
+      <div className="card">
+        <div className="flex items-center gap-2 mb-1">
+          <h1 className="page-title gradient-text">Course Registration</h1>
+          <UserPlus size={24} className="text-blue-500" />
         </div>
-      )}
+        <p className="page-subtitle">Please fill out your details to enroll in the course</p>
 
-      {!refLink && (
-        <div style={{ backgroundColor: 'rgba(255,204,0,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '16px', color: '#8a6d00' }}>
-          Warning: Missing course referral link. Registration might fail.
-        </div>
-      )}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-semibold flex items-center gap-2 mb-3">
+            <AlertCircle size={18} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="form-group">
-          <label className="form-label" htmlFor="fullName">Full Name *</label>
-          <input
-            id="fullName"
-            type="text"
-            className="form-input"
-            placeholder="John Doe"
-            {...register('fullName')}
-          />
-          {errors.fullName && <span className="form-error">{errors.fullName.message}</span>}
-        </div>
+        {!refLink && (
+          <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-xl text-xs text-yellow-800 font-semibold mb-3">
+            ⚠️ Warning: Missing course referral link. Please launch this form from the bot.
+          </div>
+        )}
 
-        <div className="form-group">
-          <label className="form-label" htmlFor="phone">Phone Number</label>
-          <input
-            id="phone"
-            type="tel"
-            className="form-input"
-            placeholder="+1234567890"
-            {...register('phone')}
-          />
-          {errors.phone && <span className="form-error">{errors.phone.message}</span>}
-        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
+          <div className="form-group">
+            <label className="form-label" htmlFor="fullName">Full Name *</label>
+            <input
+              id="fullName"
+              type="text"
+              className="form-input"
+              placeholder="e.g. John Doe"
+              {...register('fullName')}
+            />
+            {errors.fullName && <span className="form-error">{errors.fullName.message}</span>}
+          </div>
 
-        <div className="form-group">
-          <label className="form-label" htmlFor="parentPhone">Parent/Relative Phone (Optional)</label>
-          <input
-            id="parentPhone"
-            type="tel"
-            className="form-input"
-            placeholder="+1234567890"
-            {...register('parentPhone')}
-          />
-        </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="phone">Phone Number</label>
+            <input
+              id="phone"
+              type="tel"
+              className="form-input"
+              placeholder="+998901234567"
+              {...register('phone')}
+            />
+            {errors.phone && <span className="form-error">{errors.phone.message}</span>}
+          </div>
 
-        <div className="form-group">
-          <label className="form-label" htmlFor="parentRelation">Whose phone is this? (Optional)</label>
-          <input
-            id="parentRelation"
-            type="text"
-            className="form-input"
-            placeholder="e.g., Mother, Father, Brother"
-            {...register('parentRelation')}
-          />
-        </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="parentPhone">Parent / Relative Phone (Optional)</label>
+            <input
+              id="parentPhone"
+              type="tel"
+              className="form-input"
+              placeholder="+998901234567"
+              {...register('parentPhone')}
+            />
+          </div>
 
-        <div className="form-group">
-          <label className="form-label" htmlFor="aboutMe">Briefly about yourself (Optional)</label>
-          <textarea
-            id="aboutMe"
-            className="form-input"
-            rows={3}
-            placeholder="What are your goals?"
-            {...register('aboutMe')}
-          />
-        </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="parentRelation">Whose phone is this? (Optional)</label>
+            <input
+              id="parentRelation"
+              type="text"
+              className="form-input"
+              placeholder="e.g., Mother, Father, Brother"
+              {...register('parentRelation')}
+            />
+          </div>
 
-        <button 
-          type="submit" 
-          className="btn btn--primary btn--full glass-btn" 
-          disabled={isSubmitting}
-          style={{ marginTop: '16px' }}
-        >
-          {isSubmitting ? 'Registering...' : 'Register'}
-        </button>
-      </form>
+          <div className="form-group">
+            <label className="form-label" htmlFor="aboutMe">Briefly about yourself (Optional)</label>
+            <textarea
+              id="aboutMe"
+              className="form-input"
+              rows={3}
+              placeholder="What are your learning goals?"
+              {...register('aboutMe')}
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="btn btn--primary btn--full mt-3" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <Loader2 size={18} className="animate-spin" />
+                <span>Registering...</span>
+              </div>
+            ) : (
+              'Complete Registration'
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

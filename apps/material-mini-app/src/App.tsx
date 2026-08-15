@@ -49,25 +49,29 @@ function AppContent() {
     return (
       <div className="loader-container">
         <div className="loader-spinner" />
-        <p>Loading materials...</p>
+        <p className="loader-message">Loading materials...</p>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="error-state">
-        <h2>User Not Found</h2>
-        <p>You are not registered in the system.</p>
+      <div className="dashboard-container">
+        <div className="error-state card">
+          <h2>User Not Found</h2>
+          <p>You are not registered in the system.</p>
+        </div>
       </div>
     );
   }
 
   if (enrollments.length === 0) {
     return (
-      <div className="error-state">
-        <h2>No Enrollments</h2>
-        <p>You are not actively enrolled in any group.</p>
+      <div className="dashboard-container">
+        <div className="error-state card">
+          <h2>No Active Enrollments</h2>
+          <p>You are not actively enrolled in any group.</p>
+        </div>
       </div>
     );
   }

@@ -41,3 +41,8 @@ apps/api/node_modules/
 # Docker
 *.pid
 cloudflared
+
+# Python
+__pycache__/
+*.pyc
+*.pyo

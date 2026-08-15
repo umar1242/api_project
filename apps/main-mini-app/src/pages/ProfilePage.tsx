@@ -1,6 +1,6 @@
 import React from 'react';
 import { Loader } from '@shared-ui/core';
-import { AlertCircle, User, Phone, Shield, Activity, BookOpen } from 'lucide-react';
+import { AlertCircle, User, Phone, Shield, Activity, BookOpen, CheckCircle, Clock, XCircle, Award } from 'lucide-react';
 import type { UserProfile, Enrollment } from '../types';
 
 interface ProfilePageProps {
@@ -13,7 +13,7 @@ interface ProfilePageProps {
 interface InfoRowProps {
   icon: React.ReactNode;
   label: string;
-  value: string | null | undefined;
+  value: React.ReactNode;
 }
 
 const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value }) => (
@@ -26,17 +26,20 @@ const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value }) => (
   </div>
 );
 
-const STATUS_LABEL: Record<string, string> = {
-  ACTIVE: '✅ Active',
-  PAUSED: '⏸️ Paused',
-  BANNED: '🚫 Banned',
-};
-
-const ENROLLMENT_STATUS_LABEL: Record<string, string> = {
-  ACTIVE: '✅ Active',
-  PAUSED: '⏸️ Paused',
-  EXCLUDED: '❌ Excluded',
-  COMPLETED: '🎓 Completed',
+const renderStatusBadge = (status: string) => {
+  switch (status) {
+    case 'ACTIVE':
+      return <span className="badge badge--green"><CheckCircle size={12} /> Active</span>;
+    case 'PAUSED':
+      return <span className="badge badge--yellow"><Clock size={12} /> Paused</span>;
+    case 'BANNED':
+    case 'EXCLUDED':
+      return <span className="badge badge--red"><XCircle size={12} /> {status}</span>;
+    case 'COMPLETED':
+      return <span className="badge badge--purple"><Award size={12} /> Completed</span>;
+    default:
+      return <span className="badge badge--gray">{status}</span>;
+  }
 };
 
 /**
@@ -52,9 +55,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   if (error || !user) {
     return (
-      <div className="error-state">
-        <AlertCircle size={40} className="error-state__icon" />
-        <p className="error-state__message">{error ?? 'Profile not found'}</p>
+      <div className="page">
+        <div className="error-state card">
+          <AlertCircle size={40} className="error-state__icon" />
+          <p className="error-state__message">{error ?? 'Profile not found'}</p>
+        </div>
       </div>
     );
   }
@@ -65,10 +70,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   });
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-header__title">My Profile</h1>
-        <User size={24} className="page-header__icon" />
+    <div className="page pb-24">
+      <div className="page-header mb-2">
+        <h1 className="page-header__title gradient-text">My Profile</h1>
+        <User size={24} className="page-header__icon text-blue-500" />
       </div>
 
       {/* Avatar + name */}
@@ -78,7 +83,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
         <div className="profile-hero__info">
           <h2 className="profile-hero__name">{user.fullName}</h2>
-          <span className="badge badge--blue">{user.role}</span>
+          <div>
+            <span className="badge badge--blue">{user.role}</span>
+          </div>
         </div>
       </div>
 
@@ -91,7 +98,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         <InfoRow
           icon={<Activity size={16} />}
           label="Account Status"
-          value={STATUS_LABEL[user.status] ?? user.status}
+          value={renderStatusBadge(user.status)}
         />
         <InfoRow icon={<BookOpen size={16} />} label="Member Since" value={memberSince} />
       </div>
@@ -113,7 +120,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <InfoRow
             icon={<Activity size={16} />}
             label="Enrollment Status"
-            value={ENROLLMENT_STATUS_LABEL[enrollment.status] ?? enrollment.status}
+            value={renderStatusBadge(enrollment.status)}
           />
           {enrollment.paymentDueAt && (
             <InfoRow

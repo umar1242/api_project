@@ -56,7 +56,7 @@ export const VariantsPage: React.FC = () => {
     const newTasks = [];
     let order = 1;
     for(let i=0; i<type1Count4; i++) {
-      newTasks.push({ type: 'MULTIPLE_CHOICE', orderIndex: order++, optionsCount: 4, correctAnswer: '', requiresAttachment: false, requiresAdmin: false });
+      newTasks.push({ type: 'MULTIPLE_CHOICE', orderIndex: order++, optionsCount: 4, correctAnswer: '', requiresAttachment: false, requiresAdmin: false, maxAttachments: 4 });
     }
     for(let i=0; i<type1Count6; i++) {
       newTasks.push({ type: 'MULTIPLE_CHOICE', orderIndex: order++, optionsCount: 6, correctAnswer: '', requiresAttachment: false, requiresAdmin: false, maxAttachments: 4 });

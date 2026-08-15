@@ -1,20 +1,10 @@
-import { BottomNav as SharedBottomNav } from '@shared-ui/core';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
-import { Loader } from '@shared-ui/core';
+import { BottomNav as SharedBottomNav, Loader } from '@shared-ui/core';
+import { FileText, Trophy, User } from 'lucide-react';
 import { useTelegramUser } from './hooks/useTelegramUser';
-
-const NAV_ITEMS = [
-  { to: '/tests', label: 'Tests', icon: '📝' },
-  { to: '/leaderboard', label: 'Rating', icon: '🏆' },
-  { to: '/profile', label: 'Profile', icon: '👤' },
-];
-
-function BottomNav() {
-  return <SharedBottomNav items={NAV_ITEMS as any} />;
-}
 
 import { TestsPage } from './pages/TestsPage';
 import { TestTakingPage } from './pages/TestTakingPage';
@@ -23,12 +13,19 @@ import { EnterCodePage } from './pages/EnterCodePage';
 import { SubmissionResultPage } from './pages/SubmissionResultPage';
 import { ProfilePage } from './pages/ProfilePage';
 
-// Temporary placeholders for pages
+const NAV_ITEMS = [
+  { to: '/tests', label: 'Tests', icon: <FileText size={22} /> },
+  { to: '/leaderboard', label: 'Rating', icon: <Trophy size={22} /> },
+  { to: '/profile', label: 'Profile', icon: <User size={22} /> },
+];
+
+function BottomNav() {
+  return <SharedBottomNav items={NAV_ITEMS} />;
+}
 
 function AppShell() {
   const location = useLocation();
-  // Скрываем нижнюю панель навигации на экране прохождения теста —
-  // она перекрывает фиксированную кнопку "Finish Test" внизу экрана.
+  // Hide navigation on test taking and result screens to maximize screen space
   const hideNav = /^\/tests\/[^/]+$/.test(location.pathname) || /^\/results\/[^/]+$/.test(location.pathname);
 
   return (
@@ -60,7 +57,11 @@ function App() {
   }, []);
 
   if (isLoading) {
-    return <div className="app-shell"><Loader message="Starting up..." size="lg" /></div>;
+    return (
+      <div className="app-shell">
+        <Loader message="Starting up..." size="lg" />
+      </div>
+    );
   }
 
   return (

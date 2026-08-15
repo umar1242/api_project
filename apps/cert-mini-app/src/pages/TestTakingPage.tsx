@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { Loader } from '@shared-ui/core';
 import { Timer } from '../components/Timer';
@@ -23,19 +23,20 @@ export const TestTakingPage: React.FC = () => {
   const navigate = useNavigate();
   const [test, setTest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const initialDraft = loadTestDraft(id);
   const [answers, setAnswers] = useState<Record<string, string>>(initialDraft.answers || {});
   const [subAnswers, setSubAnswers] = useState<Record<string, Record<string, string>>>(initialDraft.subAnswers || {});
   const [fileUrls, setFileUrls] = useState<Record<string, string[]>>(initialDraft.fileUrls || {});
   const [uploadingTaskId, setUploadingTaskId] = useState<string | null>(null);
-  const [timeLeft] = useState(3600); // 1 hour demo timer
+  const [timeLeft, setTimeLeft] = useState(3600);
 
   useEffect(() => {
     if (!id) return;
     try {
       localStorage.setItem(`test_draft_${id}`, JSON.stringify({ answers, subAnswers, fileUrls }));
     } catch {
-      // localStorage недоступен/переполнен — пропускаем молча
+      // Ignore localStorage issues
     }
   }, [id, answers, subAnswers, fileUrls]);
 
@@ -47,6 +48,11 @@ export const TestTakingPage: React.FC = () => {
           data.tasks.sort((a: any, b: any) => a.orderIndex - b.orderIndex);
         }
         setTest(data);
+        if (data.durationMinutes) {
+          setTimeLeft(data.durationMinutes * 60);
+        } else if (data.duration) {
+          setTimeLeft(data.duration);
+        }
       } catch (err) {
         WebApp.showAlert('Test not found');
         navigate('/tests');
@@ -63,12 +69,12 @@ export const TestTakingPage: React.FC = () => {
   };
 
   const handleAnswerChange = (taskId: string, answer: string) => {
-    WebApp.HapticFeedback.selectionChanged();
+    WebApp.HapticFeedback?.selectionChanged();
     setAnswers(prev => ({ ...prev, [taskId]: answer }));
   };
 
   const handleSubAnswerChange = (taskId: string, subQuestionId: string, answer: string) => {
-    WebApp.HapticFeedback.selectionChanged();
+    WebApp.HapticFeedback?.selectionChanged();
     setSubAnswers(prev => ({
       ...prev,
       [taskId]: { ...(prev[taskId] || {}), [subQuestionId]: answer },
@@ -93,12 +99,13 @@ export const TestTakingPage: React.FC = () => {
         const { data } = await apiClient.post('/files/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        uploaded.push(data.fileUrl);
+        const url = data?.fileUrl || data?.url || data?.path || data?.key;
+        if (url) uploaded.push(url);
       }
       setFileUrls(prev => ({ ...prev, [taskId]: [...(prev[taskId] || []), ...uploaded] }));
-      WebApp.HapticFeedback.notificationOccurred('success');
+      WebApp.HapticFeedback?.notificationOccurred('success');
     } catch (error) {
-      WebApp.HapticFeedback.notificationOccurred('error');
+      WebApp.HapticFeedback?.notificationOccurred('error');
       WebApp.showAlert('Failed to upload photo. Please try again.');
     } finally {
       setUploadingTaskId(null);
@@ -110,9 +117,10 @@ export const TestTakingPage: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    WebApp.HapticFeedback.notificationOccurred('success');
+    WebApp.HapticFeedback?.notificationOccurred('success');
     WebApp.showConfirm('Are you sure you want to finish the test?', async (confirm: boolean) => {
-      if(confirm) {
+      if (confirm) {
+        setSubmitting(true);
         try {
           const { data: submission } = await apiClient.post(`/variants/${id}/submissions`, {
             answers,
@@ -122,8 +130,10 @@ export const TestTakingPage: React.FC = () => {
           if (id) localStorage.removeItem(`test_draft_${id}`);
           navigate(`/results/${submission.id}`);
         } catch (error) {
-          WebApp.HapticFeedback.notificationOccurred('error');
+          WebApp.HapticFeedback?.notificationOccurred('error');
           WebApp.showAlert('Failed to submit test. Try again.');
+        } finally {
+          setSubmitting(false);
         }
       }
     });
@@ -133,28 +143,29 @@ export const TestTakingPage: React.FC = () => {
   if (!test) return null;
 
   return (
-    <div className="page" style={{ paddingBottom: '96px' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)', marginBottom: '16px' }}>
-        <button onClick={() => navigate('/tests')} style={{ color: 'var(--tg-hint)' }}>
-          <ArrowLeft size={24} />
+    <div className="page pb-24">
+      <div className="sticky top-0 z-50 py-3 flex items-center justify-between border-b border-gray-100 bg-white/90 backdrop-blur-md -mx-4 px-4 mb-4">
+        <button onClick={() => navigate('/tests')} className="btn--icon" aria-label="Back">
+          <ArrowLeft size={20} />
         </button>
-        <div style={{ fontWeight: 'bold', fontSize: '18px', textAlign: 'center', flex: 1, margin: '0 8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div className="font-bold text-lg text-center flex-1 mx-2 truncate">
           {test.title}
         </div>
         <Timer initialSeconds={timeLeft} onExpire={handleTimerExpire} />
       </div>
 
-      <div className="glass-form" style={{ padding: '12px', borderRadius: 'var(--radius-lg)', fontSize: '14px', color: 'var(--tg-hint)', marginBottom: '24px' }}>
-        Please read the PDF instructions attached by the teacher. 
-        Select or enter the answers for each task below.
+      <div className="card mb-4">
+        <p className="text-sm text-gray-500">
+          Please read the test instructions carefully. Select or enter the answers for each task below.
+        </p>
       </div>
 
-      <div className="section" style={{ gap: '20px' }}>
+      <div className="flex flex-col gap-5">
         {test.tasks?.map((task: any) => (
-          <div key={task.id} className="card glass-form">
-            <div className="task-card__header">
-              <span style={{ fontWeight: 'bold', fontSize: '18px', color: 'var(--tg-text)' }}>Task {task.orderIndex}</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 8px', background: 'rgba(0,0,0,0.05)', borderRadius: '6px', color: 'var(--tg-hint)' }}>
+          <div key={task.id} className="card">
+            <div className="flex justify-between items-center mb-3">
+              <span className="font-bold text-lg">Task {task.orderIndex}</span>
+              <span className="badge badge--blue">
                 {task.type.replace('_', ' ')}
               </span>
             </div>
@@ -185,10 +196,10 @@ export const TestTakingPage: React.FC = () => {
             )}
 
             {task.type === 'WRITTEN_WORK' && (task.subQuestions?.length || 0) > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
+              <div className="flex flex-col gap-3 mt-1">
                 {task.subQuestions.map((sq: any, sqIndex: number) => (
-                  <div key={sq.id} style={{ background: 'var(--tg-secondary-bg, #f5f5f5)', borderRadius: '10px', padding: '10px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px', color: 'var(--tg-hint)' }}>
+                  <div key={sq.id} className="p-3 bg-gray-50 rounded-xl">
+                    <div className="text-xs font-semibold mb-2 text-gray-500">
                       Question {sqIndex + 1}
                     </div>
                     <MathKeyboard
@@ -202,8 +213,7 @@ export const TestTakingPage: React.FC = () => {
 
             {task.type === 'WRITTEN_WORK' && (task.subQuestions?.length || 0) === 0 && (
               <textarea
-                className="form-textarea"
-                style={{ marginTop: '4px', fontSize: '14px' }}
+                className="form-textarea mt-1"
                 placeholder="Type your detailed solution here..."
                 value={answers[task.id] || ''}
                 onChange={(e) => handleAnswerChange(task.id, e.target.value)}
@@ -211,25 +221,26 @@ export const TestTakingPage: React.FC = () => {
             )}
 
             {task.requiresAttachment && (
-              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '12px', color: 'var(--tg-hint)' }}>
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="text-xs text-gray-500">
                   Attach photo of solution ({(fileUrls[task.id] || []).length}/{task.maxAttachments || 4})
                 </div>
                 {(fileUrls[task.id] || []).length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <div className="flex flex-wrap gap-2">
                     {(fileUrls[task.id] || []).map((url: string) => (
-                      <div key={url} style={{ position: 'relative' }}>
-                        <img src={url} alt="attachment" style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }} />
+                      <div key={url} className="relative rounded-lg overflow-hidden border border-gray-200 w-16 h-16 shadow-sm">
+                        <img src={url} alt="attachment" className="w-full h-full object-cover" />
                         <button
+                          type="button"
                           onClick={() => handleRemoveFile(task.id, url)}
-                          style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#ef4444', color: 'white', fontSize: '12px', lineHeight: '20px', border: 'none', padding: 0 }}
+                          className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5 shadow"
                         >×</button>
                       </div>
                     ))}
                   </div>
                 )}
                 {(fileUrls[task.id] || []).length < (task.maxAttachments || 4) && (
-                  <label className="upload-box" style={{ padding: '12px', flexDirection: 'row', justifyContent: 'center', cursor: uploadingTaskId === task.id ? 'default' : 'pointer' }}>
+                  <label className="upload-box">
                     <input
                       type="file"
                       accept="image/*"
@@ -238,8 +249,19 @@ export const TestTakingPage: React.FC = () => {
                       disabled={uploadingTaskId === task.id}
                       onChange={(e) => handleFileUpload(task.id, e.target.files, task.maxAttachments || 4)}
                     />
-                    <ImageIcon size={18} />
-                    <span style={{ fontSize: '14px' }}>{uploadingTaskId === task.id ? 'Uploading...' : 'Attach Photo of Solution'}</span>
+                    <div className="flex items-center gap-2">
+                      {uploadingTaskId === task.id ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin text-blue-500" />
+                          <span className="text-sm font-semibold">Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon size={18} className="text-blue-500" />
+                          <span className="text-sm font-semibold">Attach Photo of Solution</span>
+                        </>
+                      )}
+                    </div>
                   </label>
                 )}
               </div>
@@ -248,9 +270,17 @@ export const TestTakingPage: React.FC = () => {
         ))}
       </div>
 
-      <div style={{ position: 'fixed', bottom: '16px', left: '16px', right: '16px', zIndex: 50 }}>
-        <button className="btn btn--full glass-btn" style={{ boxShadow: '0 8px 24px rgba(36, 129, 204, 0.4)' }} onClick={handleSubmit}>
-          <CheckCircle size={20} style={{ marginRight: '8px' }} />
+      <div className="fixed bottom-4 left-4 right-4 z-50 max-w-[568px] mx-auto">
+        <button
+          className="btn btn--primary btn--full"
+          disabled={submitting}
+          onClick={handleSubmit}
+        >
+          {submitting ? (
+            <Loader2 size={20} className="animate-spin mr-2" />
+          ) : (
+            <CheckCircle size={20} className="mr-2" />
+          )}
           Finish Test
         </button>
       </div>

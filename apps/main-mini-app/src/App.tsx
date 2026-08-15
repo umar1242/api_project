@@ -83,13 +83,18 @@ function App() {
                 <ProgressPage
                   groupId={groupId}
                   courseId={enrollment?.group?.courseId}
-                  userId={user?.id?.toString()}
+                  userId={user?.id ? String(user.id) : undefined}
                 />
               }
             />
             <Route
               path="/shop"
-              element={<CoinShopPage courseId={enrollment?.group?.courseId} userId={user?.id?.toString()} />}
+              element={
+                <CoinShopPage
+                  courseId={enrollment?.group?.courseId}
+                  userId={user?.id ? String(user.id) : undefined}
+                />
+              }
             />
             <Route
               path="/assignments"
@@ -97,7 +102,7 @@ function App() {
             />
             <Route
               path="/assignments/:id"
-              element={<AssignmentDetailsPage userId={user?.id} />}
+              element={<AssignmentDetailsPage userId={user?.id ? String(user.id) : undefined} />}
             />
             <Route
               path="/profile"

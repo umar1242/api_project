@@ -6,10 +6,10 @@ interface LoaderProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const sizeMap = { sm: 20, md: 32, lg: 48 };
+const sizeMap = { sm: 24, md: 40, lg: 56 };
 
 /**
- * Centered full-height loading spinner with optional message.
+ * Tactile Claymorphic loading spinner with optional message.
  */
 export const Loader: React.FC<LoaderProps> = ({ message = 'Loading...', size = 'md' }) => {
   const px = sizeMap[size];
@@ -18,7 +18,7 @@ export const Loader: React.FC<LoaderProps> = ({ message = 'Loading...', size = '
     <div className="loader-container">
       <div
         className="loader-spinner"
-        style={{ width: px, height: px, borderWidth: size === 'sm' ? 2 : 3 }}
+        style={{ width: px, height: px }}
         role="status"
         aria-label={message}
       />
