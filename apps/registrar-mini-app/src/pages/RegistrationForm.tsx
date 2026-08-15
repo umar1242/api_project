@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import WebAppModule from "@twa-dev/sdk";
 const WebApp = (WebAppModule as any).default || WebAppModule;
 import { CheckCircle2, AlertCircle, UserPlus, Loader2 } from 'lucide-react';
@@ -19,8 +19,10 @@ const registrationSchema = z.object({
 type RegistrationFormData = z.infer<typeof registrationSchema>;
 
 export const RegistrationForm: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const refLink = searchParams.get('refLink');
+  const { refLink } = useParams<{ refLink: string }>();
+  const [courseInfo, setCourseInfo] = useState<{ title: string; description?: string } | null>(null);
+  const [courseLoading, setCourseLoading] = useState(true);
+  const [courseError, setCourseError] = useState(false);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -40,9 +42,21 @@ export const RegistrationForm: React.FC = () => {
     WebApp.expand();
   }, []);
 
+  useEffect(() => {
+    if (!refLink || refLink === 'invalid') {
+      setCourseLoading(false);
+      setCourseError(true);
+      return;
+    }
+    apiClient.get(`/courses/${refLink}`)
+      .then(res => setCourseInfo({ title: res.data.title, description: res.data.description }))
+      .catch(() => setCourseError(true))
+      .finally(() => setCourseLoading(false));
+  }, [refLink]);
+
   const onSubmit = async (data: RegistrationFormData) => {
-    if (!refLink) {
-      setError('Invalid referral link. Please open this page via your bot enrollment link.');
+    if (!refLink || refLink === 'invalid' || courseError) {
+      setError('Invalid course code. Please open this page via the bot with a valid code.');
       return;
     }
 
@@ -129,9 +143,18 @@ export const RegistrationForm: React.FC = () => {
           </div>
         )}
 
-        {!refLink && (
+        {courseLoading && (
+          <div className="p-3 text-center text-sm text-gray-500 mb-3">Loading course...</div>
+        )}
+        {courseError && (
           <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-xl text-xs text-yellow-800 font-semibold mb-3">
-            ⚠️ Warning: Missing course referral link. Please launch this form from the bot.
+            ⚠️ Course not found. Please open this form via the bot using a valid code.
+          </div>
+        )}
+        {courseInfo && (
+          <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl mb-3">
+            <p className="text-sm font-bold text-blue-900">{courseInfo.title}</p>
+            {courseInfo.description && <p className="text-xs text-blue-700 mt-1">{courseInfo.description}</p>}
           </div>
         )}
 
@@ -196,7 +219,7 @@ export const RegistrationForm: React.FC = () => {
           <button 
             type="submit" 
             className="btn btn--primary btn--full mt-3" 
-            disabled={isSubmitting}
+            disabled={isSubmitting || courseLoading || courseError}
           >
             {isSubmitting ? (
               <div className="flex items-center gap-2">

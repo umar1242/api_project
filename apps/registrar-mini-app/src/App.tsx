@@ -6,8 +6,8 @@ function App() {
     <div className="app-container">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<RegistrationForm />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/register/:refLink" element={<RegistrationForm />} />
+          <Route path="*" element={<Navigate to="/register/invalid" replace />} />
         </Routes>
       </BrowserRouter>
     </div>

@@ -86,6 +86,7 @@ model Course {
   plan        String?    @db.Text
   /// Unique referral link slug — shared with prospective students
   refLink     String     @unique @map("ref_link") @db.VarChar(100)
+  accessCode  String?    @unique @map("access_code") @db.VarChar(5)
   createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz
 

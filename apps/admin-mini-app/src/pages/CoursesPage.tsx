@@ -10,6 +10,7 @@ interface Course {
   type: 'FREE' | 'PAID';
   description: string;
   refLink: string;
+  accessCode?: string;
 }
 
 export const CoursesPage: React.FC = () => {
@@ -19,7 +20,10 @@ export const CoursesPage: React.FC = () => {
   
   const [isCreating, setIsCreating] = useState(false);
   const [step, setStep] = useState(1);
-  const [createdRefLink, setCreatedRefLink] = useState('');
+  const [createdCourseId, setCreatedCourseId] = useState('');
+  const [createdAccessCode, setCreatedAccessCode] = useState('');
+  const [isAnnouncing, setIsAnnouncing] = useState(false);
+  const [announced, setAnnounced] = useState(false);
   
   const [title, setTitle] = useState('');
   const [type, setType] = useState<'FREE' | 'PAID'>('FREE');
@@ -77,7 +81,8 @@ export const CoursesPage: React.FC = () => {
       }
 
       WebApp.HapticFeedback?.notificationOccurred('success');
-      setCreatedRefLink(`https://t.me/student1242bot?start=${courseData.refLink}`);
+      setCreatedCourseId(courseData.id);
+      setCreatedAccessCode(courseData.accessCode || '');
       setStep(3);
       fetchData(); // Refresh list in background
     } catch (err) {
@@ -86,8 +91,23 @@ export const CoursesPage: React.FC = () => {
     }
   };
 
-  const handleShare = () => {
-    WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(createdRefLink)}&text=${encodeURIComponent('Join my new course!')}`);
+  const handleAnnounce = async () => {
+    try {
+      setIsAnnouncing(true);
+      await apiClient.post(`/courses/${createdCourseId}/announce`);
+      WebApp.HapticFeedback?.notificationOccurred('success');
+      setAnnounced(true);
+    } catch (err) {
+      WebApp.HapticFeedback?.notificationOccurred('error');
+      WebApp.showAlert('Не удалось отправить объявление. Попробуйте ещё раз.');
+    } finally {
+      setIsAnnouncing(false);
+    }
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard?.writeText(createdAccessCode).catch(() => {});
+    WebApp.HapticFeedback?.impactOccurred('light');
   };
 
   const resetForm = () => {
@@ -98,7 +118,10 @@ export const CoursesPage: React.FC = () => {
     setSelectedGroupId('');
     setDescription('');
     setPlan('');
-    setCreatedRefLink('');
+    setCreatedCourseId('');
+    setCreatedAccessCode('');
+    setIsAnnouncing(false);
+    setAnnounced(false);
   };
 
   if (loading) {
@@ -118,13 +141,24 @@ export const CoursesPage: React.FC = () => {
           <div className="empty-state card mt-6">
             <CheckCircle size={64} className="text-green-500 mb-2" />
             <h2 className="empty-state__title">Course Created!</h2>
-            <p className="empty-state__desc">Share this referral link with your students to let them enroll.</p>
-            <div className="p-3 bg-gray-100 rounded-xl break-all font-mono text-center my-4 w-full text-xs">
-              {createdRefLink}
+            <p className="empty-state__desc">This is your course access code. Students send it directly to the registrar bot to enroll.</p>
+            <div 
+              className="p-3 bg-gray-100 rounded-xl text-center my-4 w-full text-2xl font-mono font-bold tracking-widest cursor-pointer"
+              onClick={handleCopyCode}
+            >
+              {createdAccessCode}
             </div>
-            <button className="btn btn--primary btn--full mb-2" onClick={handleShare}>
-              Share via Telegram
-            </button>
+            {!announced ? (
+              <button 
+                className="btn btn--primary btn--full mb-2" 
+                onClick={handleAnnounce}
+                disabled={isAnnouncing}
+              >
+                {isAnnouncing ? 'Sending...' : 'Send Announcement to My Chat'}
+              </button>
+            ) : (
+              <p className="text-sm text-green-600 font-semibold mb-2">✓ Announcement sent to your chat!</p>
+            )}
             <button className="btn btn--secondary btn--full" onClick={resetForm}>
               Back to Courses
             </button>
@@ -295,8 +329,8 @@ export const CoursesPage: React.FC = () => {
               <p className="text-sm text-gray-600 mb-3 line-clamp-2">{course.description || 'No description provided'}</p>
               
               <div className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500">Referral Code</span>
-                <span className="text-xs text-blue-500 font-mono font-bold">...{course.refLink}</span>
+                <span className="text-xs font-semibold text-gray-500">Access Code</span>
+                <span className="text-xs text-blue-500 font-mono font-bold">{course.accessCode || course.refLink}</span>
               </div>
             </div>
           ))

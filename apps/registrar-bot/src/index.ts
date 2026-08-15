@@ -1,94 +1,40 @@
-import { Bot, session, Context, SessionFlavor, InlineKeyboard } from 'grammy';
-import { conversations, createConversation, ConversationFlavor, Conversation } from '@grammyjs/conversations';
+import { Bot } from 'grammy';
 import { config } from './config';
 import { apiClient } from './api/api.client';
 
-interface SessionData {
-  refLink?: string;
-}
-
-type MyContext = Context & SessionFlavor<SessionData> & ConversationFlavor;
-type MyConversation = Conversation<MyContext>;
-
-const bot = new Bot<MyContext>(config.telegramToken);
-
-bot.use(session({ initial: () => ({ conversation: {} }) }));
-bot.use(conversations());
-
-async function registrationConversation(conversation: MyConversation, ctx: MyContext) {
-  const refLink = ctx.match as string;
-  if (!refLink || typeof refLink !== 'string') return;
-
-  try {
-    const { data: course } = await conversation.external(() => apiClient.get(`/courses/${refLink}`));
-    
-    await ctx.reply(`Добро пожаловать! Вы регистрируетесь на курс <b>${course.title}</b>.\n\nВведите ваше ФИО:`, { parse_mode: 'HTML' });
-    const nameCtx = await conversation.wait();
-    if (nameCtx.message?.text === '/cancel') return ctx.reply('Регистрация отменена.');
-    const fullName = nameCtx.message?.text || 'Без имени';
-
-    await ctx.reply('Введите ваш номер телефона (или нажмите /skip, если хотите пропустить):');
-    const phoneCtx = await conversation.wait();
-    if (phoneCtx.message?.text === '/cancel') return ctx.reply('Регистрация отменена.');
-    const phone = phoneCtx.message?.text === '/skip' ? undefined : phoneCtx.message?.text;
-
-    await ctx.reply('Создаю вашу анкету ученика...');
-
-    const { data: enrollment } = await conversation.external(() => apiClient.post('/enrollments', {
-      refLink,
-      fullName,
-      phone,
-      metadata: { registeredVia: 'BotConversation' }
-    }));
-
-    const kb = new InlineKeyboard()
-      .text('Да, хочу зайти', `join_${enrollment.inviteLink}`)
-      .text('Нет, позже', 'join_later');
-
-    await ctx.reply(
-      `Резюме успешно создано!\n\nВаше имя: ${fullName}\nВаш телефон: ${phone || 'Не указан'}\n\nХотите ли вы сейчас зайти в приватную группу курса?`,
-      { reply_markup: kb }
-    );
-  } catch (err: any) {
-    if (err.response?.status === 404) {
-      await ctx.reply('Извините, курс не найден или ссылка недействительна.');
-    } else {
-      console.error('API Error:', err.message);
-      await ctx.reply('Произошла ошибка при регистрации. Возможно, вы уже зарегистрированы.');
-    }
-  }
-}
-
-bot.use(createConversation(registrationConversation));
+const bot = new Bot(config.telegramToken);
 
 bot.command('start', async (ctx) => {
-  const refLink = ctx.match;
-  if (!refLink) {
-    return ctx.reply('Добро пожаловать! Пожалуйста, перейдите по правильной реферальной ссылке курса для регистрации.');
-  }
-
-  await ctx.conversation.enter('registrationConversation');
+  await ctx.reply(
+    '👋 Добро пожаловать!\n\nЕсли у вас есть код курса от куратора — просто отправьте его сюда (5 символов), и я пришлю кнопку для регистрации.'
+  );
 });
 
-bot.callbackQuery(/^join_(.+)$/, async (ctx) => {
-  const action = ctx.match[1];
-  if (action === 'later') {
-    await ctx.answerCallbackQuery();
-    await ctx.editMessageText('Хорошо! Вы сможете зайти в группу позже. Свяжитесь с куратором, когда будете готовы.');
-    return;
-  }
+bot.on('message:text', async (ctx) => {
+  const text = ctx.message.text.trim().toUpperCase();
 
-  // It's an invite link
-  const inviteLink = action;
-  
-  const kb = new InlineKeyboard().url('Перейти в группу', inviteLink);
-  await ctx.answerCallbackQuery();
-  await ctx.editMessageText('Отлично! Вот ваша одноразовая ссылка для входа в группу (она работает только один раз):', {
-    reply_markup: kb
-  });
+  if (text.length === 5) {
+    try {
+      const { data: course } = await apiClient.get(`/courses/by-code/${text}`);
+      await ctx.reply(
+        `📚 Найден курс: <b>${course.title}</b>${course.description ? `\n${course.description}` : ''}\n\nНажмите кнопку ниже, чтобы зарегистрироваться.`,
+        {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '📝 Записаться на курс', web_app: { url: `${config.miniAppUrl}/register/${course.refLink}` } }],
+            ],
+          },
+        },
+      );
+    } catch (err: any) {
+      await ctx.reply('❌ Неверный или неизвестный код курса.');
+    }
+  } else {
+    await ctx.reply('Отправьте мне 5-значный код курса, чтобы начать регистрацию.');
+  }
 });
 
-// Listen for when the bot is added to a group
 bot.on('my_chat_member', async (ctx) => {
   const newStatus = ctx.myChatMember.new_chat_member.status;
 
@@ -97,7 +43,7 @@ bot.on('my_chat_member', async (ctx) => {
     if (chat.type === 'group' || chat.type === 'supergroup') {
       try {
         await apiClient.post('/groups', {
-          courseId: null, // Unlinked
+          courseId: null,
           telegramChatId: chat.id.toString(),
           title: chat.title || 'Unknown Group',
           description: 'Auto-registered by Registrar Bot',

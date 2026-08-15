@@ -26,6 +26,12 @@ export class CourseResponseDto {
   @ApiProperty({ description: "The referral link slug for this course" })
   refLink: string;
 
+  @ApiProperty({
+    description: "The 5-character unique access code",
+    required: false,
+  })
+  accessCode?: string;
+
   @ApiProperty({ description: "Creation timestamp" })
   createdAt: Date;
 
