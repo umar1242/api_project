@@ -2,9 +2,29 @@ import { NextFunction } from 'grammy';
 import { AxiosInstance } from 'axios';
 import { ExtendedContext, UserRole, ApiUser } from '../types';
 
+// In-memory cache for API users to avoid DDoS on Core API (TTL: 5 minutes)
+const userCache = new Map<string, { user: ApiUser; expiresAt: number }>();
+
+export function getCachedUser(telegramId: string): ApiUser | undefined {
+  const cached = userCache.get(telegramId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.user;
+  }
+  userCache.delete(telegramId);
+  return undefined;
+}
+
+export function setCachedUser(telegramId: string, user: ApiUser): void {
+  userCache.set(telegramId, { user, expiresAt: Date.now() + 5 * 60 * 1000 });
+}
+
+export function invalidateUserCache(telegramId: string): void {
+  userCache.delete(telegramId);
+}
+
 /**
  * Middleware that upserts user into Core API upon incoming interaction
- * and caches user data in context.
+ * and caches user data in context and in-memory TTL cache.
  */
 export function upsertUserMiddleware(apiClient: AxiosInstance) {
   return async (ctx: ExtendedContext, next: NextFunction) => {
@@ -13,10 +33,17 @@ export function upsertUserMiddleware(apiClient: AxiosInstance) {
       return next();
     }
 
-    try {
-      const telegramId = from.id.toString();
-      const fullName = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'User';
+    const telegramId = from.id.toString();
 
+    // Check cache first
+    const cached = getCachedUser(telegramId);
+    if (cached) {
+      ctx.user = cached;
+      return next();
+    }
+
+    try {
+      const fullName = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'User';
       const response = await apiClient.post<ApiUser>('/users/upsert', {
         telegramId,
         fullName,
@@ -24,6 +51,7 @@ export function upsertUserMiddleware(apiClient: AxiosInstance) {
 
       if (response.data) {
         ctx.user = response.data;
+        setCachedUser(telegramId, response.data);
       }
     } catch (err: any) {
       console.warn(`[bot-core] upsertUser failed for tgId=${from?.id}:`, err.message || err);
@@ -44,16 +72,24 @@ export function requireRole(allowedRoles: UserRole[], apiClient: AxiosInstance) 
       return;
     }
 
-    try {
-      let user = ctx.user;
+    const telegramId = from.id.toString();
 
-      // If user not already loaded in context, fetch from Core API
+    try {
+      let user = ctx.user || getCachedUser(telegramId);
+
+      // If user not already loaded in context or cache, fetch from Core API
       if (!user) {
         try {
-          const response = await apiClient.get<ApiUser>(`/users/by-telegram/${from.id}`);
+          const response = await apiClient.get<ApiUser>(`/users/by-telegram/${telegramId}`);
           user = response.data;
-          ctx.user = user;
+          if (user) {
+            setCachedUser(telegramId, user);
+          }
         } catch {}
+      }
+
+      if (user) {
+        ctx.user = user;
       }
 
       if (!user) {
