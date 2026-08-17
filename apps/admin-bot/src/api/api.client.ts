@@ -166,6 +166,46 @@ class ApiClient {
     const { data } = await this.http.post(`/materials`, payload);
     return data;
   }
+
+  // ── Groups & Courses ───────────────────────────────────────────────────────
+
+  /**
+   * List all groups.
+   */
+  async listGroups(params?: { courseId?: string }): Promise<any[]> {
+    const { data } = await this.http.get('/groups', { params });
+    return Array.isArray(data) ? data : (data?.data || []);
+  }
+
+  /**
+   * List all courses.
+   */
+  async listCourses(): Promise<any[]> {
+    const { data } = await this.http.get('/courses');
+    return Array.isArray(data) ? data : (data?.data || []);
+  }
+
+  // ── Generic HTTP Pass-throughs ─────────────────────────────────────────────
+
+  async get<T = any>(url: string, config?: any): Promise<{ data: T }> {
+    return this.http.get<T>(url, config);
+  }
+
+  async post<T = any>(url: string, data?: any, config?: any): Promise<{ data: T }> {
+    return this.http.post<T>(url, data, config);
+  }
+
+  async patch<T = any>(url: string, data?: any, config?: any): Promise<{ data: T }> {
+    return this.http.patch<T>(url, data, config);
+  }
+
+  async put<T = any>(url: string, data?: any, config?: any): Promise<{ data: T }> {
+    return this.http.put<T>(url, data, config);
+  }
+
+  async delete<T = any>(url: string, config?: any): Promise<{ data: T }> {
+    return this.http.delete<T>(url, config);
+  }
 }
 
 // Export a singleton — bots only need one client instance
