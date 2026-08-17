@@ -4,40 +4,17 @@ import { config } from '../config';
 
 /**
  * /pending command handler for Admin Bot.
- * Shows pending submissions awaiting grading.
+ * Displays real student variant submissions awaiting grading.
  */
 export async function pendingSubmissionsHandler(ctx: CommandContext<Context>): Promise<void> {
-  await ctx.reply('⏳ Проверяю работы, ожидающие проверки...');
+  await ctx.reply('⏳ Загружаю работы, ожидающие проверки...');
 
   try {
-    const { data: groups } = await apiClient.listGroups();
+    const { data: submissionsRes } = await apiClient.get('/variants/submissions/pending');
+    const submissions = Array.isArray(submissionsRes) ? submissionsRes : (submissionsRes?.data || []);
 
-    if (!Array.isArray(groups) || groups.length === 0) {
-      await ctx.reply('📭 В системе пока нет созданных учебных групп.');
-      return;
-    }
-
-    let text = `📝 <b>Работы, ожидающие проверки:</b>\n\n`;
-    const buttons: any[] = [];
-    let foundCount = 0;
-
-    for (const g of groups.slice(0, 5)) {
-      try {
-        const { data: assignments } = await apiClient.get(`/assignments/group/${g.id}`);
-        if (Array.isArray(assignments)) {
-          for (const a of assignments) {
-            text += `👥 <b>${g.title}</b> → <i>${a.title}</i>\n`;
-            buttons.push([
-              { text: `⭐ Проверить: ${a.title.slice(0, 20)}`, web_app: { url: `${config.webAppUrl}/assignments/${a.id}` } },
-            ]);
-            foundCount++;
-          }
-        }
-      } catch {}
-    }
-
-    if (foundCount === 0) {
-      await ctx.reply('✅ <b>Все сданные работы проверены!</b>\nНепроверенных заданий нет.', {
+    if (!Array.isArray(submissions) || submissions.length === 0) {
+      await ctx.reply('✅ <b>Все работы проверены!</b>\nНет заданий в статусе PENDING.', {
         parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
@@ -48,15 +25,28 @@ export async function pendingSubmissionsHandler(ctx: CommandContext<Context>): P
       return;
     }
 
-    buttons.push([{ text: '🖥 Открыть панель проверки', web_app: { url: config.webAppUrl } }]);
+    let text = `📝 <b>Работы, ожидающие проверки (${submissions.length}):</b>\n\n`;
+    const buttons: any[] = [];
+
+    for (const s of submissions.slice(0, 10)) {
+      const studentName = s.user?.fullName || 'Неизвестный студент';
+      const variantTitle = s.variant?.title || 'Тест';
+      text += `• <b>${variantTitle}</b> — 👤 ${studentName}\n`;
+      buttons.push([
+        { 
+          text: `⭐ Проверить: ${variantTitle.slice(0, 20)}`, 
+          web_app: { url: `${config.webAppUrl}/submissions/${s.id}` } 
+        },
+      ]);
+    }
+
+    buttons.push([{ text: '🖥 Открыть панель проверки', web_app: { url: `${config.webAppUrl}/submissions` } }]);
 
     await ctx.reply(text, {
       parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: buttons,
-      },
+      reply_markup: { inline_keyboard: buttons },
     });
   } catch (err: any) {
-    await ctx.reply(`❌ Ошибка получения списка заданий: ${err.message || 'Сбой API'}`);
+    await ctx.reply(`❌ Ошибка получения списка: ${err.message || 'Сбой API'}`);
   }
 }
