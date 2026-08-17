@@ -49,9 +49,11 @@ export function requireRole(allowedRoles: UserRole[], apiClient: AxiosInstance) 
 
       // If user not already loaded in context, fetch from Core API
       if (!user) {
-        const response = await apiClient.get<ApiUser>(`/users/telegram/${from.id}`);
-        user = response.data;
-        ctx.user = user;
+        try {
+          const response = await apiClient.get<ApiUser>(`/users/by-telegram/${from.id}`);
+          user = response.data;
+          ctx.user = user;
+        } catch {}
       }
 
       if (!user) {
@@ -59,7 +61,7 @@ export function requireRole(allowedRoles: UserRole[], apiClient: AxiosInstance) 
         return;
       }
 
-      if (user.isBanned) {
+      if (user.status === 'BANNED' || user.isBanned) {
         const reason = user.bannedReason ? `\nПричина: ${user.bannedReason}` : '';
         await ctx.reply(`🚫 Ваш аккаунт заблокирован.${reason}\nОбратитесь к администратору.`);
         return;

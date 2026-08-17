@@ -7,6 +7,7 @@ export interface ApiUser {
   telegramId: string;
   fullName: string;
   role: UserRole;
+  status?: string;
   isBanned?: boolean;
   bannedReason?: string | null;
   createdAt?: string;

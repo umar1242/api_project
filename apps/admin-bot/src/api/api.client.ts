@@ -59,6 +59,10 @@ class ApiClient {
     );
   }
 
+  get client(): AxiosInstance {
+    return this.http;
+  }
+
   // ── Health ────────────────────────────────────────────────────────────────
 
   async ping(): Promise<{ status: string }> {

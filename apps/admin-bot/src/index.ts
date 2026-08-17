@@ -22,6 +22,7 @@ import {
   logRequestMiddleware,
   setupBotErrorHandler,
   setupBotCommands,
+  requireRole,
   ExtendedContext,
 } from '@bot/core';
 
@@ -32,7 +33,7 @@ export interface SessionData {
   } | null;
 }
 
-export type MyContext = Context & SessionFlavor<SessionData> & ConversationFlavor;
+export type MyContext = Context & SessionFlavor<SessionData> & ConversationFlavor & ExtendedContext;
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
@@ -57,22 +58,27 @@ async function main() {
   bot.use(conversations());
   bot.use(createConversation(createVariantConversation));
 
+  // Role check middleware for administrative operations
+  const adminOnly = requireRole(['ADMIN', 'CURATOR'], apiClient.client) as any;
+
   // ── Commands ───────────────────────────────────────────────────────────────
   bot.command('start', startHandler);
   bot.command('help', helpHandler);
-  bot.command('users', usersListHandler);
-  bot.command('user', userLookupHandler);
-  bot.command('ban', banUserHandler);
-  bot.command('unban', unbanUserHandler);
-  bot.command('create_assignment', createAssignmentHandler);
-  bot.command('link_homework', linkHomeworkHandler);
-  bot.command('grade_homework', gradeHomeworkHandler);
-  bot.command('add_material', addMaterialHandler);
-  bot.command('create_variant', createVariantHandler);
-  bot.command('stats', statsHandler);
-  bot.command('broadcast', broadcastHandler);
-  bot.command('pending', pendingSubmissionsHandler);
-  bot.command('enroll', enrollHandler);
+
+  // Protected administrative commands
+  bot.command('users', adminOnly, usersListHandler);
+  bot.command('user', adminOnly, userLookupHandler);
+  bot.command('ban', adminOnly, banUserHandler);
+  bot.command('unban', adminOnly, unbanUserHandler);
+  bot.command('create_assignment', adminOnly, createAssignmentHandler);
+  bot.command('link_homework', adminOnly, linkHomeworkHandler);
+  bot.command('grade_homework', adminOnly, gradeHomeworkHandler);
+  bot.command('add_material', adminOnly, addMaterialHandler);
+  bot.command('create_variant', adminOnly, createVariantHandler);
+  bot.command('stats', adminOnly, statsHandler);
+  bot.command('broadcast', adminOnly, broadcastHandler);
+  bot.command('pending', adminOnly, pendingSubmissionsHandler);
+  bot.command('enroll', adminOnly, enrollHandler);
 
   // Catch all cancel
   bot.command('cancel', async (ctx) => {
@@ -81,26 +87,26 @@ async function main() {
   });
 
   // Handle incoming files
-  bot.on(['message:document', 'message:video', 'message:photo'], handleMaterialUpload);
+  bot.on(['message:document', 'message:video', 'message:photo'], adminOnly, handleMaterialUpload);
 
   // ── Keyboard button aliases ────────────────────────────────────────────────
-  bot.hears('👥 Users', usersListHandler);
-  bot.hears('👥 Пользователи', usersListHandler);
-  bot.hears('📊 Stats', statsHandler);
-  bot.hears('📊 Статистика', statsHandler);
-  bot.hears('📝 Проверка', pendingSubmissionsHandler);
+  bot.hears('👥 Users', adminOnly, usersListHandler);
+  bot.hears('👥 Пользователи', adminOnly, usersListHandler);
+  bot.hears('📊 Stats', adminOnly, statsHandler);
+  bot.hears('📊 Статистика', adminOnly, statsHandler);
+  bot.hears('📝 Проверка', adminOnly, pendingSubmissionsHandler);
   bot.hears('❓ Help', helpHandler);
   bot.hears('❓ Помощь', helpHandler);
-  bot.callbackQuery('refresh_stats', async (ctx) => {
+  bot.callbackQuery('refresh_stats', adminOnly, async (ctx) => {
     await ctx.answerCallbackQuery({ text: 'Обновлено!' });
     return statsHandler(ctx as any);
   });
-  bot.callbackQuery(/^users_page:(\d+)$/, async (ctx) => {
+  bot.callbackQuery(/^users_page:(\d+)$/, adminOnly, async (ctx) => {
     const page = parseInt(ctx.match[1], 10) || 1;
     await ctx.answerCallbackQuery();
     return usersListHandler(ctx, page);
   });
-  bot.callbackQuery(/^ban_user:(\d+)$/, async (ctx) => {
+  bot.callbackQuery(/^ban_user:(\d+)$/, adminOnly, async (ctx) => {
     const tgId = parseInt(ctx.match[1], 10);
     await ctx.answerCallbackQuery({ text: 'Блокировка...' });
     try {
@@ -110,7 +116,7 @@ async function main() {
       await ctx.reply(`❌ Ошибка: ${e.message}`);
     }
   });
-  bot.callbackQuery(/^unban_user:(\d+)$/, async (ctx) => {
+  bot.callbackQuery(/^unban_user:(\d+)$/, adminOnly, async (ctx) => {
     const tgId = parseInt(ctx.match[1], 10);
     await ctx.answerCallbackQuery({ text: 'Разблокировка...' });
     try {
