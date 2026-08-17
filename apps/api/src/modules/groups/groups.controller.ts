@@ -110,7 +110,8 @@ export class GroupsController {
     name: "x-service-token",
     description: "Service authentication token",
   })
-  @UseGuards(ServiceTokenGuard)
+  @UseGuards(ServiceTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @Patch(":id/link")
   async linkCourse(
     @Req() req: any,
