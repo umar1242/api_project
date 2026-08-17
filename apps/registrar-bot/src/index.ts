@@ -6,6 +6,7 @@ import {
   setupBotErrorHandler,
   setupBotCommands,
   upsertUserMiddleware,
+  requireRole,
   ExtendedContext,
 } from '@bot/core';
 
@@ -67,7 +68,7 @@ bot.command('help', async (ctx) => {
   );
 });
 
-bot.command('link_course', async (ctx) => {
+bot.command('link_course', requireRole(['ADMIN'], apiClient) as any, async (ctx) => {
   const raw = ctx.match?.trim() ?? '';
   const [groupId, courseId] = raw.split(/\s+/);
 
@@ -80,7 +81,11 @@ bot.command('link_course', async (ctx) => {
   }
 
   try {
-    const { data: group } = await apiClient.patch(`/groups/${groupId}/link`, { courseId });
+    const { data: group } = await apiClient.patch(
+      `/groups/${groupId}/link`,
+      { courseId },
+      { headers: { 'x-admin-telegram-id': ctx.from!.id.toString() } }
+    );
     await ctx.reply(
       `✅ Группа <b>${group.title || groupId}</b> успешно привязана к курсу ID <code>${courseId}</code>!`,
       { parse_mode: 'HTML' }
