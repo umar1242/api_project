@@ -83,6 +83,26 @@ export class MaterialsService {
     }
   }
 
+  async findAll(options?: { search?: string; take?: number }): Promise<MaterialResponseDto[]> {
+    const where: Prisma.MaterialWhereInput = {};
+
+    if (options?.search) {
+      where.OR = [
+        { title: { contains: options.search, mode: "insensitive" } },
+        { description: { contains: options.search, mode: "insensitive" } },
+      ];
+    }
+
+    const materials = await this.prisma.material.findMany({
+      where,
+      take: options?.take ?? 50,
+      orderBy: { createdAt: "desc" },
+      include: { lesson: true },
+    });
+
+    return materials.map((m: any) => this.mapToDto(m));
+  }
+
   async findAllByGroup(
     groupId: bigint,
     isStudent = false,

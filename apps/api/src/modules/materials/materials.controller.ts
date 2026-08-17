@@ -59,6 +59,21 @@ export class MaterialsController {
     return true;
   }
 
+  @Get()
+  @ApiOperation({ summary: "Get all materials with optional text search" })
+  @ApiQuery({ name: "search", required: false, type: String })
+  @ApiQuery({ name: "take", required: false, type: Number })
+  @ApiResponse({ status: 200, type: [MaterialResponseDto] })
+  async findAll(
+    @Query("search") search?: string,
+    @Query("take") take?: string,
+  ): Promise<MaterialResponseDto[]> {
+    return this.materialsService.findAll({
+      search,
+      take: take ? parseInt(take, 10) : undefined,
+    });
+  }
+
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.CURATOR)
