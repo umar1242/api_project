@@ -9,7 +9,7 @@ import { PrismaService } from "../../database/prisma.service";
 import { CreateEnrollmentDto } from "./dto/create-enrollment.dto";
 import { EnrollmentResponseDto } from "./dto/enrollment-response.dto";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import { EnrollmentStatus } from "@prisma/client";
+import { EnrollmentStatus, Prisma } from "@prisma/client";
 import { ConfigService } from "@nestjs/config";
 import { NotificationsService } from "../notifications/notifications.service";
 
@@ -234,6 +234,38 @@ export class EnrollmentsService {
     return this.mapToDto(enrollment);
   }
 
+  async findAll(query: {
+    userId?: string;
+    telegramId?: string;
+  }): Promise<{ data: EnrollmentResponseDto[]; total: number }> {
+    const where: Prisma.EnrollmentWhereInput = {};
+    if (query.userId) {
+      where.userId = BigInt(query.userId);
+    }
+    if (query.telegramId) {
+      where.user = { telegramId: BigInt(query.telegramId) };
+    }
+
+    const [enrollments, total] = await Promise.all([
+      this.prisma.enrollment.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: true,
+          group: {
+            include: {
+              course: true,
+            },
+          },
+        },
+      }),
+      this.prisma.enrollment.count({ where }),
+    ]);
+
+    const data = enrollments.map((e: any) => this.mapToDto(e));
+    return { data, total };
+  }
+
   private mapToDto(enrollment: any): EnrollmentResponseDto {
     return new EnrollmentResponseDto({
       ...enrollment,
@@ -243,6 +275,34 @@ export class EnrollmentsService {
       id: enrollment.id.toString(),
       userId: enrollment.userId.toString(),
       groupId: enrollment.groupId.toString(),
+      user: enrollment.user
+        ? {
+            id: enrollment.user.id.toString(),
+            telegramId: enrollment.user.telegramId.toString(),
+            fullName: enrollment.user.fullName,
+            phone: enrollment.user.phone || undefined,
+            role: enrollment.user.role,
+            status: enrollment.user.status,
+            xp: enrollment.user.xp,
+          }
+        : undefined,
+      group: enrollment.group
+        ? {
+            id: enrollment.group.id.toString(),
+            courseId: enrollment.group.courseId.toString(),
+            name: enrollment.group.name,
+            schedule: enrollment.group.schedule,
+            status: enrollment.group.status,
+            course: enrollment.group.course
+              ? {
+                  id: enrollment.group.course.id.toString(),
+                  title: enrollment.group.course.title,
+                  description: enrollment.group.course.description,
+                  price: enrollment.group.course.price,
+                }
+              : undefined,
+          }
+        : undefined,
     } as any);
   }
 }

@@ -1,4 +1,4 @@
-import { Bot, session, GrammyError, HttpError, Context, SessionFlavor } from 'grammy';
+import { Bot, session, Context, SessionFlavor } from 'grammy';
 import { conversations, createConversation, ConversationFlavor } from '@grammyjs/conversations';
 import { config } from './config';
 import { apiClient } from './api/api.client';
@@ -14,6 +14,15 @@ import { createAssignmentHandler } from './handlers/assignments.handler';
 import { linkHomeworkHandler, gradeHomeworkHandler } from './handlers/homework.handler';
 import { addMaterialHandler, handleMaterialUpload } from './handlers/materials.handler';
 import { createVariantConversation, createVariantHandler } from './handlers/variant.handler';
+import { statsHandler } from './handlers/stats.handler';
+import { broadcastHandler } from './handlers/broadcast.handler';
+import { pendingSubmissionsHandler } from './handlers/pending.handler';
+import { enrollHandler } from './handlers/enroll.handler';
+import {
+  logRequestMiddleware,
+  setupBotErrorHandler,
+  setupBotCommands,
+} from '../packages/bot-core/src';
 
 export interface SessionData {
   awaitingMaterial?: {
@@ -23,6 +32,7 @@ export interface SessionData {
 }
 
 export type MyContext = Context & SessionFlavor<SessionData> & ConversationFlavor;
+
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -38,29 +48,15 @@ async function main() {
 
   const bot = new Bot<MyContext>(config.telegramToken);
 
-  // ── Middleware ──────────────────────────────────────────────────────────────
+  // ── Core Middlewares ────────────────────────────────────────────────────────
+  bot.use(logRequestMiddleware('AdminBot'));
 
-  // Add session support (in-memory for Stage 1; replace with Redis in Stage 3)
+  // Session & conversations
   bot.use(session({ initial: (): SessionData => ({ awaitingMaterial: null }) }));
-  
-  // Add conversations support
   bot.use(conversations());
   bot.use(createConversation(createVariantConversation));
 
-  // Request logging
-  bot.use(async (ctx, next) => {
-    const from = ctx.from
-      ? `${ctx.from.id} (@${ctx.from.username ?? 'unknown'})`
-      : 'unknown';
-    const updateKeys = Object.keys(ctx.update).filter(k => k !== 'update_id');
-    const update = updateKeys.length > 0 ? updateKeys[0] : 'unknown';
-    const text = ctx.message?.text ?? '';
-    console.log(`[AdminBot] [${update}] from=${from} text="${text}"`);
-    await next();
-  });
-
   // ── Commands ───────────────────────────────────────────────────────────────
-
   bot.command('start', startHandler);
   bot.command('help', helpHandler);
   bot.command('users', usersListHandler);
@@ -72,39 +68,65 @@ async function main() {
   bot.command('grade_homework', gradeHomeworkHandler);
   bot.command('add_material', addMaterialHandler);
   bot.command('create_variant', createVariantHandler);
+  bot.command('stats', statsHandler);
+  bot.command('broadcast', broadcastHandler);
+  bot.command('pending', pendingSubmissionsHandler);
+  bot.command('enroll', enrollHandler);
 
   // Catch all cancel
   bot.command('cancel', async (ctx) => {
     ctx.session.awaitingMaterial = null;
-    await ctx.reply('Action canceled.');
+    await ctx.reply('Действие отменено.');
   });
 
   // Handle incoming files
   bot.on(['message:document', 'message:video', 'message:photo'], handleMaterialUpload);
 
   // ── Keyboard button aliases ────────────────────────────────────────────────
-
   bot.hears('👥 Users', usersListHandler);
+  bot.hears('👥 Пользователи', usersListHandler);
+  bot.hears('📊 Stats', statsHandler);
+  bot.hears('📊 Статистика', statsHandler);
+  bot.hears('📝 Проверка', pendingSubmissionsHandler);
   bot.hears('❓ Help', helpHandler);
-
-  // ── Error handling ─────────────────────────────────────────────────────────
-
-  bot.catch((err) => {
-    const { ctx, error } = err;
-    if (error instanceof GrammyError) {
-      console.error('[AdminBot] grammy error:', error.description);
-    } else if (error instanceof HttpError) {
-      console.error('[AdminBot] HTTP error:', error.error);
-    } else {
-      console.error('[AdminBot] Unexpected error:', error);
+  bot.hears('❓ Помощь', helpHandler);
+  bot.callbackQuery('refresh_stats', async (ctx) => {
+    await ctx.answerCallbackQuery({ text: 'Обновлено!' });
+    return statsHandler(ctx as any);
+  });
+  bot.callbackQuery(/^users_page:(\d+)$/, async (ctx) => {
+    const page = parseInt(ctx.match[1], 10) || 1;
+    await ctx.answerCallbackQuery();
+    return usersListHandler(ctx, page);
+  });
+  bot.callbackQuery(/^ban_user:(\d+)$/, async (ctx) => {
+    const tgId = parseInt(ctx.match[1], 10);
+    await ctx.answerCallbackQuery({ text: 'Блокировка...' });
+    try {
+      const user = await apiClient.banUser(tgId);
+      await ctx.editMessageText(`🚫 Пользователь <b>${user.fullName}</b> заблокирован.`, { parse_mode: 'HTML' });
+    } catch (e: any) {
+      await ctx.reply(`❌ Ошибка: ${e.message}`);
     }
-    // Notify the user something went wrong (best-effort)
-    void ctx.reply('⚠️ An unexpected error occurred. Please try again.').catch(() => {});
+  });
+  bot.callbackQuery(/^unban_user:(\d+)$/, async (ctx) => {
+    const tgId = parseInt(ctx.match[1], 10);
+    await ctx.answerCallbackQuery({ text: 'Разблокировка...' });
+    try {
+      const user = await apiClient.unbanUser(tgId);
+      await ctx.editMessageText(`✅ Пользователь <b>${user.fullName}</b> разблокирован.`, { parse_mode: 'HTML' });
+    } catch (e: any) {
+      await ctx.reply(`❌ Ошибка: ${e.message}`);
+    }
+  });
+  bot.callbackQuery('noop', async (ctx) => {
+    await ctx.answerCallbackQuery();
   });
 
-  // ── Start polling ──────────────────────────────────────────────────────────
+  // ── Error handling ─────────────────────────────────────────────────────────
+  setupBotErrorHandler(bot, 'AdminBot');
 
-  // Graceful shutdown
+  // ── Graceful shutdown ──────────────────────────────────────────────────────
   process.once('SIGTERM', () => {
     console.log('[AdminBot] SIGTERM received — stopping...');
     bot.stop();
@@ -114,10 +136,29 @@ async function main() {
     bot.stop();
   });
 
+  // ── Start polling ──────────────────────────────────────────────────────────
   await bot.start({
-    onStart: (info) => {
+    onStart: async (info) => {
       console.log(`[AdminBot] Running as @${info.username} (${info.id})`);
       console.log('[AdminBot] Polling for updates...');
+
+      await setupBotCommands(bot, [
+        { command: 'start', description: '🔑 Авторизация и главное меню' },
+        { command: 'stats', description: '📊 Общая статистика платформы' },
+        { command: 'pending', description: '📝 Работы на проверке' },
+        { command: 'broadcast', description: '📢 Массовая рассылка студентам' },
+        { command: 'enroll', description: '➕ Зачислить студента в группу' },
+        { command: 'users', description: '👥 Список пользователей' },
+        { command: 'user', description: '🔍 Поиск пользователя' },
+        { command: 'ban', description: '🚫 Заблокировать пользователя' },
+        { command: 'unban', description: '✅ Разблокировать пользователя' },
+        { command: 'create_assignment', description: '📝 Создать домашнее задание' },
+        { command: 'link_homework', description: '🔗 Привязать ДЗ к уроку' },
+        { command: 'grade_homework', description: '⭐ Оценить работу студента' },
+        { command: 'add_material', description: '📚 Добавить учебный материал' },
+        { command: 'create_variant', description: '🎓 Создать тест / вариант' },
+        { command: 'help', description: '❓ Список всех команд' },
+      ]);
     },
   });
 }

@@ -1,0 +1,86 @@
+import { NextFunction } from 'grammy';
+import { AxiosInstance } from 'axios';
+import { ExtendedContext, UserRole, ApiUser } from '../types';
+
+/**
+ * Middleware that upserts user into Core API upon incoming interaction
+ * and caches user data in context.
+ */
+export function upsertUserMiddleware(apiClient: AxiosInstance) {
+  return async (ctx: ExtendedContext, next: NextFunction) => {
+    const from = ctx.from;
+    if (!from || from.is_bot) {
+      return next();
+    }
+
+    try {
+      const telegramId = from.id.toString();
+      const fullName = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'User';
+
+      const response = await apiClient.post<ApiUser>('/users/upsert', {
+        telegramId,
+        fullName,
+      });
+
+      if (response.data) {
+        ctx.user = response.data;
+      }
+    } catch (err: any) {
+      console.warn(`[bot-core] upsertUser failed for tgId=${from?.id}:`, err.message || err);
+    }
+
+    return next();
+  };
+}
+
+/**
+ * Middleware that restricts access only to specified roles (e.g. ADMIN, CURATOR).
+ * Also checks if the user is banned.
+ */
+export function requireRole(allowedRoles: UserRole[], apiClient: AxiosInstance) {
+  return async (ctx: ExtendedContext, next: NextFunction) => {
+    const from = ctx.from;
+    if (!from) {
+      return;
+    }
+
+    try {
+      let user = ctx.user;
+
+      // If user not already loaded in context, fetch from Core API
+      if (!user) {
+        const response = await apiClient.get<ApiUser>(`/users/telegram/${from.id}`);
+        user = response.data;
+        ctx.user = user;
+      }
+
+      if (!user) {
+        await ctx.reply('⛔ Доступ запрещён.\n\nВаш аккаунт не найден в системе. Обратитесь к администратору.');
+        return;
+      }
+
+      if (user.isBanned) {
+        const reason = user.bannedReason ? `\nПричина: ${user.bannedReason}` : '';
+        await ctx.reply(`🚫 Ваш аккаунт заблокирован.${reason}\nОбратитесь к администратору.`);
+        return;
+      }
+
+      if (!allowedRoles.includes(user.role)) {
+        await ctx.reply(
+          `⛔ Недостаточно прав.\n\nЭта функция доступна только для ролей: <b>${allowedRoles.join(', ')}</b>.\nВаша роль: <i>${user.role}</i>.`,
+          { parse_mode: 'HTML' }
+        );
+        return;
+      }
+
+      return next();
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        await ctx.reply('⛔ Доступ запрещён.\n\nВаш аккаунт не зарегистрирован в системе или не имеет прав администратора.');
+        return;
+      }
+      console.error('[bot-core] requireRole error:', error.message || error);
+      await ctx.reply('⚠️ Ошибка проверки прав доступа. Пожалуйста, попробуйте позже.');
+    }
+  };
+}

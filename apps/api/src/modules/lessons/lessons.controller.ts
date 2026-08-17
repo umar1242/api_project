@@ -30,13 +30,14 @@ import { UserRole } from "@prisma/client";
 
 @ApiTags("Lessons")
 @ApiSecurity("service-token")
-@UseGuards(ServiceTokenGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.CURATOR)
+@UseGuards(ServiceTokenGuard)
 @Controller("lessons")
 export class LessonsController {
   constructor(private readonly lessonsService: LessonsService) {}
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @ApiOperation({ summary: "Create a new lesson for a group" })
   @ApiResponse({ status: 201, type: LessonResponseDto })
   async create(@Body() dto: CreateLessonDto): Promise<LessonResponseDto> {
@@ -80,6 +81,8 @@ export class LessonsController {
   }
 
   @Put(":id")
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @ApiOperation({ summary: "Update a lesson" })
   @ApiResponse({ status: 200, type: LessonResponseDto })
   async update(
@@ -90,6 +93,8 @@ export class LessonsController {
   }
 
   @Delete(":id")
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.CURATOR)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete a lesson" })
   @ApiResponse({ status: 204 })

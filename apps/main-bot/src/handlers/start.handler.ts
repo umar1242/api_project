@@ -1,40 +1,33 @@
 import { Bot, Context } from 'grammy';
 import { config } from '../config';
-import { apiClient } from '../api/api.client';
 
 /**
  * Registers the /start command handler for the Main Bot.
- *
- * The Main Bot is the student's primary touchpoint:
- * - /start → Welcome message + "Open Dashboard" WebApp button
- * - /schedule → Upcoming lessons (see schedule.handler.ts)
- * - /help → Command list
  */
 export function registerStartHandler(bot: Bot<Context>): void {
   bot.command('start', async (ctx) => {
-    const firstName = ctx.from?.first_name ?? 'Student';
-    const lastName = ctx.from?.last_name ?? '';
-    const telegramId = ctx.from?.id;
+    const firstName = ctx.from?.first_name ?? 'Студент';
 
-    if (telegramId) {
-      try {
-        await apiClient.post('/users/upsert', {
-          telegramId,
-          fullName: `${firstName} ${lastName}`.trim(),
-        });
-      } catch (err) {
-        console.error(`[Main Bot] Failed to upsert user ${telegramId}:`, err);
-      }
-    }
+    await ctx.api.setChatMenuButton({
+      chat_id: ctx.chat.id,
+      menu_button: {
+        type: 'web_app',
+        text: 'Кабинет',
+        web_app: { url: config.miniAppUrl },
+      },
+    });
 
     await ctx.reply(
-      `👋 Hello, <b>${firstName}</b>!\n\nWelcome to your <b>Student Dashboard</b>.\n\nUse the button below to access your schedule, progress, and profile — or type /schedule for a quick look at upcoming lessons.`,
+      `👋 Здравствуйте, <b>${firstName}</b>!\n\n` +
+      `Добро пожаловать в <b>личный кабинет студента</b>.\n\n` +
+      `Используйте кнопку ниже для перехода к расписанию, успеваемости и курсам:`,
       {
         parse_mode: 'HTML',
         reply_markup: {
           keyboard: [
-            [{ text: '📱 Open Dashboard', web_app: { url: config.miniAppUrl } }],
-            [{ text: '📅 My Schedule' }, { text: '❓ Help' }],
+            [{ text: '📱 Открыть личный кабинет', web_app: { url: config.miniAppUrl } }],
+            [{ text: '🏆 Прогресс' }, { text: '🪙 Монеты' }],
+            [{ text: '📅 Расписание' }, { text: '🌐 Язык / Til' }],
           ],
           resize_keyboard: true,
         },
@@ -42,13 +35,33 @@ export function registerStartHandler(bot: Bot<Context>): void {
     );
   });
 
-  bot.hears('📅 My Schedule', async (ctx) => {
-    await ctx.reply('Use /schedule to view your upcoming lessons.');
+  bot.hears('📅 Расписание', async (ctx) => {
+    await ctx.reply('Используйте команду /schedule для просмотра расписания ближайших занятий.');
+  });
+
+  bot.hears('🌐 Язык / Til', async (ctx) => {
+    await ctx.reply('🌐 <b>Выберите язык интерфейса / Tilni tanlang:</b>', {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🇷🇺 Русский', callback_data: 'set_lang:ru' },
+            { text: "🇺🇿 O'zbekcha", callback_data: 'set_lang:uz' },
+          ],
+        ],
+      },
+    });
   });
 
   bot.command('help', async (ctx) => {
     await ctx.reply(
-      `<b>Available Commands</b>\n\n/start — Open the dashboard\n/schedule — View upcoming lessons\n/help — Show this message`,
+      `📖 <b>Справка Main Bot</b>\n\n` +
+      `• <code>/start</code> — Главное меню и запуск кабинета\n` +
+      `• <code>/progress</code> — Учебный прогресс и успеваемость\n` +
+      `• <code>/coins</code> — Баланс монет и магазин наград\n` +
+      `• <code>/schedule</code> — Расписание ближайших уроков\n` +
+      `• <code>/lang</code> — Смена языка (RU / UZ)\n` +
+      `• <code>/help</code> — Это справочное сообщение`,
       { parse_mode: 'HTML' },
     );
   });

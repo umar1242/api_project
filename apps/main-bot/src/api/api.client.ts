@@ -1,25 +1,11 @@
-import axios from 'axios';
+import { createApiClient } from '../../packages/bot-core/src';
 import { config } from '../config';
 
 /**
- * Shared Axios client for all Main Bot → API calls.
- * Injects the X-Service-Token header on every request.
+ * Main Bot API client powered by @bot/core
  */
-export const apiClient = axios.create({
+export const apiClient = createApiClient({
   baseURL: config.apiBaseUrl,
-  timeout: 10_000,
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Service-Token': config.serviceToken,
-  },
+  serviceToken: config.serviceToken,
+  timeout: 10000,
 });
-
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error.response?.status;
-    const url = error.config?.url ?? '(unknown)';
-    console.error(`[API] ${status ?? 'ERR'} ${url} — ${error.message}`);
-    return Promise.reject(error);
-  },
-);

@@ -39,6 +39,7 @@ services:
       target: dev
     volumes:
     - ./apps/admin-bot:/app
+    - ./packages/bot-core:/app/packages/bot-core
     - /app/node_modules
     env_file:
     - .env
@@ -113,6 +114,7 @@ services:
       target: dev
     volumes:
     - ./apps/registrar-bot:/app
+    - ./packages/bot-core:/app/packages/bot-core
     - /app/node_modules
     env_file:
     - .env
@@ -151,6 +153,7 @@ services:
       target: dev
     volumes:
     - ./apps/main-bot:/app
+    - ./packages/bot-core:/app/packages/bot-core
     - /app/node_modules
     env_file:
     - .env
@@ -191,6 +194,7 @@ services:
       target: dev
     volumes:
     - ./apps/homework-bot:/app
+    - ./packages/bot-core:/app/packages/bot-core
     - /app/node_modules
     env_file:
     - .env
@@ -231,6 +235,7 @@ services:
       target: dev
     volumes:
     - ./apps/material-bot:/app
+    - ./packages/bot-core:/app/packages/bot-core
     - /app/node_modules
     env_file:
     - .env
@@ -271,6 +276,7 @@ services:
       target: dev
     volumes:
     - ./apps/cert-bot:/app
+    - ./packages/bot-core:/app/packages/bot-core
     - /app/node_modules
     env_file:
     - .env

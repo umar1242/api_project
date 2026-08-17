@@ -1,13 +1,11 @@
-import axios from 'axios';
+import { createApiClient } from '../../packages/bot-core/src';
 import { config } from '../config';
 
 /**
- * Pre-configured Axios instance for calling the unified API.
- * Automatically injects the X-Service-Token header.
+ * Homework Bot API client powered by @bot/core
  */
-export const apiClient = axios.create({
+export const apiClient = createApiClient({
   baseURL: config.apiBaseUrl,
-  headers: {
-    'x-service-token': config.serviceToken,
-  },
+  serviceToken: config.serviceToken,
+  timeout: 10000,
 });

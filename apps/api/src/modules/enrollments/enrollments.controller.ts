@@ -5,8 +5,10 @@ import {
   Patch,
   Body,
   Param,
+  Query,
   UseGuards,
   Req,
+  ForbiddenException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from "@nestjs/swagger";
 import { EnrollmentsService } from "./enrollments.service";
@@ -22,6 +24,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { Request } from "express";
 import { EnrollmentStatus, UserRole } from "@prisma/client";
 import { AuditService } from "../audit/audit.service";
+import { PrismaService } from "../../database/prisma.service";
 
 @ApiTags("Enrollments")
 @Controller("enrollments")
@@ -29,6 +32,7 @@ export class EnrollmentsController {
   constructor(
     private readonly enrollmentsService: EnrollmentsService,
     private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @ApiOperation({
@@ -95,6 +99,54 @@ export class EnrollmentsController {
       );
     }
     return enrollment;
+  }
+
+  @ApiOperation({
+    summary: "Get enrollments (filtered by userId or telegramId)",
+  })
+  @ApiResponse({ status: 200 })
+  @ApiHeader({
+    name: "x-service-token",
+    description: "Service authentication token",
+    required: false,
+  })
+  @ApiHeader({
+    name: "tg-init-data",
+    description: "Telegram Web App initData",
+    required: false,
+  })
+  @UseGuards(ServiceTokenGuard)
+  @Get()
+  async findAll(
+    @Req() req: any,
+    @Query("userId") userId?: string,
+    @Query("telegramId") telegramId?: string,
+  ): Promise<{ data: EnrollmentResponseDto[]; total: number }> {
+    const isService = !!req.headers["x-service-token"];
+    const isAdmin = !!req.adminTelegramId;
+
+    if (!isService && !isAdmin && req.telegramUser?.id) {
+      const dbUser = await this.prisma.user.findUnique({
+        where: { telegramId: BigInt(req.telegramUser.id) },
+      });
+
+      const isPrivileged =
+        dbUser && (dbUser.role === UserRole.ADMIN || dbUser.role === UserRole.CURATOR);
+
+      if (!isPrivileged) {
+        // If student passed userId, verify it belongs to their own DB record
+        if (userId && dbUser && dbUser.id.toString() !== userId) {
+          throw new ForbiddenException("You cannot view other users' enrollments");
+        }
+        // Force filter to only this student's telegramId/userId
+        telegramId = req.telegramUser.id.toString();
+        if (dbUser) {
+          userId = dbUser.id.toString();
+        }
+      }
+    }
+
+    return this.enrollmentsService.findAll({ userId, telegramId });
   }
 
   @ApiOperation({ summary: "Confirm enrollment payment" })

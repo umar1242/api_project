@@ -57,6 +57,11 @@ export class EnrollmentResponseDto {
   })
   user?: EnrollmentUserDto;
 
+  @ApiPropertyOptional({
+    description: "Enrolled group info",
+  })
+  group?: any;
+
   @ApiProperty({ description: "Creation timestamp" })
   createdAt: Date;
 

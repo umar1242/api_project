@@ -83,9 +83,40 @@ export class MaterialsService {
     }
   }
 
-  async findAllByGroup(groupId: bigint): Promise<MaterialResponseDto[]> {
+  async findAllByGroup(
+    groupId: bigint,
+    isStudent = false,
+  ): Promise<MaterialResponseDto[]> {
+    const where: Prisma.MaterialWhereInput = { groupId };
+    if (isStudent) {
+      where.status = MaterialStatus.PUBLISHED;
+      where.OR = [{ publishAt: null }, { publishAt: { lte: new Date() } }];
+    }
+
     const materials = await this.prisma.material.findMany({
-      where: { groupId },
+      where,
+      orderBy: { createdAt: "desc" },
+      include: { lesson: true },
+    });
+
+    return materials.map(
+      (m: Prisma.MaterialGetPayload<{ include: { lesson: true } }>) =>
+        this.mapToDto(m),
+    );
+  }
+
+  async findAllByLesson(
+    lessonId: bigint,
+    isStudent = false,
+  ): Promise<MaterialResponseDto[]> {
+    const where: Prisma.MaterialWhereInput = { lessonId };
+    if (isStudent) {
+      where.status = MaterialStatus.PUBLISHED;
+      where.OR = [{ publishAt: null }, { publishAt: { lte: new Date() } }];
+    }
+
+    const materials = await this.prisma.material.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       include: { lesson: true },
     });
