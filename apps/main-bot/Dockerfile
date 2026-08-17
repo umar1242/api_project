@@ -1,24 +1,38 @@
-# ── Build stage ───────────────────────────────────────────────────────────────
-FROM node:22-alpine AS builder
-
+# Stage: dependencies
+FROM node:22-alpine AS deps
+RUN apk add --no-cache openssl
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
+COPY package.json package-lock.json* ./
+COPY apps/main-bot/package.json ./apps/main-bot/
+COPY packages/bot-core ./packages/bot-core
+RUN npm install --workspace=apps/main-bot --workspace=packages/bot-core --include-workspace-root --no-audit --no-fund
+RUN npx tsc -p packages/bot-core
 
-# ── Development target (used by docker-compose dev) ───────────────────────────
+# Stage: development
 FROM node:22-alpine AS dev
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
+RUN apk add --no-cache openssl
+WORKDIR /app/apps/main-bot
+COPY --from=deps /app/node_modules /app/node_modules
+COPY packages/bot-core /app/packages/bot-core
+COPY apps/main-bot /app/apps/main-bot
 CMD ["npm", "run", "start:dev"]
 
-# ── Production target ─────────────────────────────────────────────────────────
+# Stage: build
+FROM node:22-alpine AS build
+WORKDIR /app/apps/main-bot
+COPY --from=deps /app/node_modules /app/node_modules
+COPY packages/bot-core /app/packages/bot-core
+COPY apps/main-bot /app/apps/main-bot
+RUN npm run build
+
+# Stage: production
 FROM node:22-alpine AS production
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY --from=builder /app/dist ./dist
+WORKDIR /app/apps/main-bot
+RUN addgroup -g 1001 -S appgroup && adduser -S appuser -u 1001
+USER appuser
+COPY --from=build --chown=appuser:appgroup /app/apps/main-bot/dist ./dist
+COPY --from=build --chown=appuser:appgroup /app/node_modules /app/node_modules
+COPY --from=build --chown=appuser:appgroup /app/packages/bot-core /app/packages/bot-core
+COPY --from=build --chown=appuser:appgroup /app/apps/main-bot/package.json ./
+ENV NODE_ENV=production
 CMD ["node", "dist/index.js"]

@@ -11,7 +11,7 @@ export async function setupBotCommands(
 ): Promise<void> {
   try {
     await bot.api.setMyCommands(commands, {
-      language_code: options?.languageCode,
+      language_code: options?.languageCode as any,
       scope: options?.scope,
     });
     console.log(`[bot-core] Registered ${commands.length} commands for @${bot.botInfo?.username || 'bot'}`);

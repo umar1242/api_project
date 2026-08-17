@@ -1,17 +1,16 @@
 {
   "name": "registrar-bot",
   "version": "1.0.0",
-  "description": "Telegram Registrar Bot — handles student registration and group management via the unified API",
+  "description": "Telegram Registrar Bot",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@grammyjs/conversations": "^2.1.1",
+    "@bot/core": "file:../../packages/bot-core",
     "axios": "^1.7.7",
     "grammy": "^1.30.0"
   },

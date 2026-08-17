@@ -1,16 +1,16 @@
 {
   "name": "main-bot",
   "version": "1.0.0",
-  "description": "Telegram Main Bot — student dashboard access and schedule reminders",
+  "description": "Telegram Main Student Bot",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "lint": "eslint \"{src}/**/*.ts\" --fix",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@bot/core": "file:../../packages/bot-core",
     "axios": "^1.7.7",
     "grammy": "^1.30.0"
   },

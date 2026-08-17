@@ -35,17 +35,20 @@ services:
       start_period: 60s
   admin-bot:
     build:
-      context: ./apps/admin-bot
+      context: .
       target: dev
+      dockerfile: ./apps/admin-bot/Dockerfile
     volumes:
-    - ./apps/admin-bot:/app
+    - ./apps/admin-bot:/app/apps/admin-bot
     - ./packages/bot-core:/app/packages/bot-core
+    - ./packages/bot-core:/app/node_modules/@bot/core
     - /app/node_modules
     env_file:
     - .env
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
+    - NODE_PATH=/app/node_modules
     depends_on:
       api:
         condition: service_healthy
@@ -110,17 +113,20 @@ services:
 
   registrar-bot:
     build:
-      context: ./apps/registrar-bot
+      context: .
       target: dev
+      dockerfile: ./apps/registrar-bot/Dockerfile
     volumes:
-    - ./apps/registrar-bot:/app
+    - ./apps/registrar-bot:/app/apps/registrar-bot
     - ./packages/bot-core:/app/packages/bot-core
+    - ./packages/bot-core:/app/node_modules/@bot/core
     - /app/node_modules
     env_file:
     - .env
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
+    - NODE_PATH=/app/node_modules
     depends_on:
       api:
         condition: service_healthy
@@ -149,17 +155,20 @@ services:
     - backend-net
   main-bot:
     build:
-      context: ./apps/main-bot
+      context: .
       target: dev
+      dockerfile: ./apps/main-bot/Dockerfile
     volumes:
-    - ./apps/main-bot:/app
+    - ./apps/main-bot:/app/apps/main-bot
     - ./packages/bot-core:/app/packages/bot-core
+    - ./packages/bot-core:/app/node_modules/@bot/core
     - /app/node_modules
     env_file:
     - .env
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
+    - NODE_PATH=/app/node_modules
     depends_on:
       api:
         condition: service_healthy
@@ -190,17 +199,20 @@ services:
     - backend-net
   homework-bot:
     build:
-      context: ./apps/homework-bot
+      context: .
       target: dev
+      dockerfile: ./apps/homework-bot/Dockerfile
     volumes:
-    - ./apps/homework-bot:/app
+    - ./apps/homework-bot:/app/apps/homework-bot
     - ./packages/bot-core:/app/packages/bot-core
+    - ./packages/bot-core:/app/node_modules/@bot/core
     - /app/node_modules
     env_file:
     - .env
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
+    - NODE_PATH=/app/node_modules
     depends_on:
       api:
         condition: service_healthy
@@ -231,17 +243,20 @@ services:
     - backend-net
   material-bot:
     build:
-      context: ./apps/material-bot
+      context: .
       target: dev
+      dockerfile: ./apps/material-bot/Dockerfile
     volumes:
-    - ./apps/material-bot:/app
+    - ./apps/material-bot:/app/apps/material-bot
     - ./packages/bot-core:/app/packages/bot-core
+    - ./packages/bot-core:/app/node_modules/@bot/core
     - /app/node_modules
     env_file:
     - .env
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
+    - NODE_PATH=/app/node_modules
     depends_on:
       api:
         condition: service_healthy
@@ -272,17 +287,20 @@ services:
     - backend-net
   cert-bot:
     build:
-      context: ./apps/cert-bot
+      context: .
       target: dev
+      dockerfile: ./apps/cert-bot/Dockerfile
     volumes:
-    - ./apps/cert-bot:/app
+    - ./apps/cert-bot:/app/apps/cert-bot
     - ./packages/bot-core:/app/packages/bot-core
+    - ./packages/bot-core:/app/node_modules/@bot/core
     - /app/node_modules
     env_file:
     - .env
     environment:
     - NODE_ENV=development
     - API_BASE_URL=http://api:3000
+    - NODE_PATH=/app/node_modules
     depends_on:
       api:
         condition: service_healthy

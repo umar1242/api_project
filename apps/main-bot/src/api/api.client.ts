@@ -1,4 +1,4 @@
-import { createApiClient } from '../../packages/bot-core/src';
+import { createApiClient } from '@bot/core';
 import { config } from '../config';
 
 /**

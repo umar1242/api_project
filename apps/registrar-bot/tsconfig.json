@@ -9,7 +9,20 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@bot/core": [
+        "../../packages/bot-core/src/index.ts",
+        "./packages/bot-core/src/index.ts",
+        "/app/packages/bot-core/src/index.ts"
+      ],
+      "@bot/core/*": [
+        "../../packages/bot-core/src/*",
+        "./packages/bot-core/src/*",
+        "/app/packages/bot-core/src/*"
+      ]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

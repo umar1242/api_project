@@ -7,7 +7,7 @@ import {
   setupBotCommands,
   upsertUserMiddleware,
   ExtendedContext,
-} from '../packages/bot-core/src';
+} from '@bot/core';
 
 const bot = new Bot<ExtendedContext>(config.telegramToken);
 

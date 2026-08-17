@@ -22,7 +22,8 @@ import {
   logRequestMiddleware,
   setupBotErrorHandler,
   setupBotCommands,
-} from '../packages/bot-core/src';
+  ExtendedContext,
+} from '@bot/core';
 
 export interface SessionData {
   awaitingMaterial?: {
